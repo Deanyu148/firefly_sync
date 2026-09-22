@@ -34,7 +34,7 @@ pnpm run build
 pnpm test
 ```
 
-Building produces `main.js` in the repository root. A complete plugin release package requires:
+Building produces `main.js` in the `dist/` directory. A complete plugin release package requires:
 - `manifest.json`
 - `main.js`
 - `styles.css`

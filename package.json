@@ -2,10 +2,10 @@
   "name": "firefly-sync",
   "version": "0.1.4",
   "description": "Sync Obsidian Markdown posts to a FireFly Astro blog through Git.",
-  "main": "main.js",
+  "main": "dist/main.js",
   "scripts": {
-    "build": "tsc --noEmit && esbuild src/main.ts --bundle --external:obsidian --outfile=main.js --format=cjs --platform=node --target=es2020",
-    "dev": "esbuild src/main.ts --bundle --external:obsidian --outfile=main.js --format=cjs --platform=node --sourcemap --watch",
+    "build": "tsc --noEmit && esbuild src/main.ts --bundle --external:obsidian --outfile=dist/main.js --format=cjs --platform=node --target=es2020 && node -e \"const fs=require('fs'); fs.copyFileSync('manifest.json','dist/manifest.json'); fs.copyFileSync('styles.css','dist/styles.css');\"",
+    "dev": "esbuild src/main.ts --bundle --external:obsidian --outfile=dist/main.js --format=cjs --platform=node --sourcemap --watch",
     "test": "vitest run",
     "test:watch": "vitest"
   },
