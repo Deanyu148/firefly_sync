@@ -19,6 +19,7 @@ export class SyncSelectionModal extends Modal {
 	private readonly defaultMode: SelectionMode;
 	private readonly loadPreviews: PreviewLoader;
 	private readonly onSubmit: SyncSubmitter;
+	private readonly postsPrefix: string;
 	private mode: SelectionMode;
 	private selected = new Set<string>();
 	private treeEl?: HTMLElement;
@@ -34,6 +35,7 @@ export class SyncSelectionModal extends Modal {
 		defaultMode: SelectionMode,
 		loadPreviews: PreviewLoader,
 		onSubmit: SyncSubmitter,
+		postsPrefix: string = "src/content/posts",
 	) {
 		super(app);
 		this.entries = entries;
@@ -43,6 +45,7 @@ export class SyncSelectionModal extends Modal {
 		this.mode = defaultMode;
 		this.loadPreviews = loadPreviews;
 		this.onSubmit = onSubmit;
+		this.postsPrefix = postsPrefix.replace(/^\/+|\/+$/g, "");
 		this.modalEl.addClass("firefly-sync-modal");
 	}
 

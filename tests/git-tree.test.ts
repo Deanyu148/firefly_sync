@@ -99,6 +99,28 @@ describe("sync preview", () => {
 		}
 	});
 
+
+	it("supports custom posts and images relative paths", async () => {
+		const root = await mkdtemp(join(tmpdir(), "firefly-sync-custom-"));
+		const repo = join(root, "repo");
+		try {
+			const customPost = join(root, "article.md");
+			const customImg = join(root, "pic.png");
+			await writeFile(customPost, "custom article");
+			await writeFile(customImg, "custom pic");
+
+			await copyToBlog(repo, [
+				{ sourceAbsolutePath: customPost, targetRelativePath: "custom/posts/article.md" },
+				{ sourceAbsolutePath: customImg, targetRelativePath: "custom/images/pic.png" },
+			]);
+
+			expect(await readFile(join(repo, "custom", "posts", "article.md"), "utf8")).toBe("custom article");
+			expect(await readFile(join(repo, "custom", "images", "pic.png"), "utf8")).toBe("custom pic");
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	});
+
 describe("git commit and push", () => {
 	it("copies only selected posts, commits them, and pushes the branch", async () => {
 		const root = await mkdtemp(join(tmpdir(), "firefly-sync-git-"));

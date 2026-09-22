@@ -236,12 +236,14 @@ function resolveRepositoryPath(repositoryPath: string, relativePath: string): st
 	return target;
 }
 
-export function resolveBlogPostPath(repositoryPath: string, relativePath: string): string {
-	const postsRoot = resolve(repositoryPath, "src", "content", "posts");
+export function resolveBlogPostPath(repositoryPath: string, relativePath: string, allowedPrefix?: string): string {
 	const target = resolveRepositoryPath(repositoryPath, relativePath);
-	const relation = relative(postsRoot, target);
-	if (relation === "" || relation === ".." || relation.startsWith(`..${sep}`) || relation.includes(`${sep}..${sep}`)) {
-		throw new Error(`同步目标必须位于博客 src/content/posts 内：${relativePath}`);
+	if (allowedPrefix) {
+		const allowedRoot = resolve(repositoryPath, allowedPrefix.replaceAll("/", sep));
+		const relation = relative(allowedRoot, target);
+		if (relation.startsWith(".." + sep) || relation === ".." || relation.includes(sep + ".." + sep)) {
+			throw new Error(`同步目标超出指定目录范围 ${allowedPrefix}：${relativePath}`);
+		}
 	}
 	return target;
 }

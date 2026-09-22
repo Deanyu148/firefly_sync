@@ -20,8 +20,6 @@ import { DEFAULT_SETTINGS, FireflySyncSettingTab, type FireflySyncSettings } fro
 import type { SelectionMode } from "./tree";
 
 export const VIEW_TYPE_FIREFLY_SYNC = "firefly-sync-view";
-const BLOG_POSTS_PREFIX = "src/content/posts/";
-const BLOG_IMAGES_PREFIX = "src/content/posts/images/";
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".bmp", ".ico"]);
 
 interface VaultSyncFile extends SyncPreviewInput {
@@ -129,6 +127,7 @@ export default class FireflySyncPlugin extends Plugin {
 				mode,
 				(paths) => this.buildPreviews(paths, mode),
 				(selectedPreviews) => this.syncFiles(selectedPreviews),
+				this.getPostsPrefix(),
 			).open();
 		} catch (error) {
 			new Notice(`无法打开同步选择器：${gitErrorMessage(error)}`);
@@ -163,6 +162,16 @@ export default class FireflySyncPlugin extends Plugin {
 		}
 	}
 
+	getPostsPrefix(): string {
+		const p = (this.settings.blogPostsPath || DEFAULT_SETTINGS.blogPostsPath).replaceAll("\\", "/").replace(/^\/+|\/+$/g, "");
+		return p || "src/content/posts";
+	}
+
+	getImagesPrefix(): string {
+		const p = (this.settings.blogImagesPath || DEFAULT_SETTINGS.blogImagesPath).replaceAll("\\", "/").replace(/^\/+|\/+$/g, "");
+		return p || "src/content/posts/images";
+	}
+
 	private async resolveAllSyncFiles(markdownPaths: string[], mode: SelectionMode): Promise<VaultSyncFile[]> {
 		const adapter = this.app.vault.adapter;
 		if (!(adapter instanceof FileSystemAdapter)) {
@@ -181,7 +190,7 @@ export default class FireflySyncPlugin extends Plugin {
 			const file = filesByPath.get(path);
 			if (!file) throw new Error(`选择的文章不存在：`);
 			if (this.isIgnored(path)) throw new Error(`该文件位于忽略目录，不能同步：`);
-			const targetRelativePath = `${BLOG_POSTS_PREFIX}${file.path.replaceAll("\\", "/")}`;
+			const targetRelativePath = `${this.getPostsPrefix()}/${file.path.replaceAll("\\", "/")}`;
 			syncFiles.push({
 				vaultPath: path,
 				sourceAbsolutePath: join(vaultBasePath, ...file.path.split("/")),
@@ -229,7 +238,7 @@ export default class FireflySyncPlugin extends Plugin {
 			const relativeUnderImages = normPath.startsWith("images/")
 				? normPath.slice("images/".length)
 				: imgFile.name;
-			const targetRelativePath = `${BLOG_IMAGES_PREFIX}${relativeUnderImages}`;
+			const targetRelativePath = `${this.getImagesPrefix()}/${relativeUnderImages}`;
 			if (!addedTargetPaths.has(targetRelativePath)) {
 				syncFiles.push({
 					vaultPath: imgFile.path,
@@ -273,7 +282,8 @@ export default class FireflySyncPlugin extends Plugin {
 		if (!configuredPath) throw new Error("请先在插件设置中填写 FireFly 博客仓库路径，例如 E:\\FireFly。");
 		await assertGitRepository(configuredPath);
 		const repository = (await runGit(configuredPath, ["rev-parse", "--show-toplevel"])).trim();
-		await access(join(repository, "src", "content", "posts"));
+		const postsDir = this.getPostsPrefix();
+		await access(join(repository, ...postsDir.split("/")));
 		return repository;
 	}
 
