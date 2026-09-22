@@ -1,0 +1,11 @@
+{
+  "id": "firefly-sync",
+  "name": "FireFly Sync",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "通过 Git 将 Obsidian 文章同步到 FireFly 静态博客。",
+  "author": "Deanyu148",
+  "authorUrl": "https://github.com/Deanyu148",
+  "fundingUrl": "https://github.com/Deanyu148/firefly_sync",
+  "isDesktopOnly": true
+}
