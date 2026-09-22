@@ -628,6 +628,8 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
 
 // src/main.ts
 var VIEW_TYPE_FIREFLY_SYNC = "firefly-sync-view";
+var BLOG_POSTS_PREFIX = "src/content/posts/";
+var BLOG_IMAGES_PREFIX = "src/content/posts/images/";
 var IMAGE_EXTENSIONS = /* @__PURE__ */ new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".bmp", ".ico"]);
 var FireflySyncPlugin = class extends import_obsidian3.Plugin {
   constructor() {
@@ -766,7 +768,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       const file = filesByPath.get(path);
       if (!file) throw new Error(`\u9009\u62E9\u7684\u6587\u7AE0\u4E0D\u5B58\u5728\uFF1A`);
       if (this.isIgnored(path)) throw new Error(`\u8BE5\u6587\u4EF6\u4F4D\u4E8E\u5FFD\u7565\u76EE\u5F55\uFF0C\u4E0D\u80FD\u540C\u6B65\uFF1A`);
-      const targetRelativePath = ``;
+      const targetRelativePath = `${BLOG_POSTS_PREFIX}${file.path.replaceAll("\\", "/")}`;
       syncFiles.push({
         vaultPath: path,
         sourceAbsolutePath: (0, import_path2.join)(vaultBasePath, ...file.path.split("/")),
@@ -793,12 +795,12 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
         const imageRefs = this.extractImageReferences(content);
         for (const ref of imageRefs) {
           const linkedFile = this.app.metadataCache.getFirstLinkpathDest(ref, mdFile.path);
-          if (linkedFile && IMAGE_EXTENSIONS.has(`.`.toLowerCase())) {
+          if (linkedFile && IMAGE_EXTENSIONS.has(`.${linkedFile.extension}`.toLowerCase())) {
             referencedImageFiles.add(linkedFile);
           } else {
             const cleanRef = ref.replace(/^\.\//, "").replace(/^images\//, "");
-            const candidate = filesByPath.get(`images/`) || filesByPath.get(ref);
-            if (candidate && IMAGE_EXTENSIONS.has(`.`.toLowerCase())) {
+            const candidate = filesByPath.get(`images/${cleanRef}`) || filesByPath.get(ref);
+            if (candidate && IMAGE_EXTENSIONS.has(`.${candidate.extension}`.toLowerCase())) {
               referencedImageFiles.add(candidate);
             }
           }
@@ -809,7 +811,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
     for (const imgFile of imageFilesToSync) {
       const normPath = imgFile.path.replaceAll("\\", "/");
       const relativeUnderImages = normPath.startsWith("images/") ? normPath.slice("images/".length) : imgFile.name;
-      const targetRelativePath = ``;
+      const targetRelativePath = `${BLOG_IMAGES_PREFIX}${relativeUnderImages}`;
       if (!addedTargetPaths.has(targetRelativePath)) {
         syncFiles.push({
           vaultPath: imgFile.path,

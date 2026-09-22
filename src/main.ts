@@ -181,7 +181,7 @@ export default class FireflySyncPlugin extends Plugin {
 			const file = filesByPath.get(path);
 			if (!file) throw new Error(`选择的文章不存在：`);
 			if (this.isIgnored(path)) throw new Error(`该文件位于忽略目录，不能同步：`);
-			const targetRelativePath = ``;
+			const targetRelativePath = `${BLOG_POSTS_PREFIX}${file.path.replaceAll("\\", "/")}`;
 			syncFiles.push({
 				vaultPath: path,
 				sourceAbsolutePath: join(vaultBasePath, ...file.path.split("/")),
@@ -210,12 +210,12 @@ export default class FireflySyncPlugin extends Plugin {
 				const imageRefs = this.extractImageReferences(content);
 				for (const ref of imageRefs) {
 					const linkedFile = this.app.metadataCache.getFirstLinkpathDest(ref, mdFile.path);
-					if (linkedFile && IMAGE_EXTENSIONS.has(`.`.toLowerCase())) {
+					if (linkedFile && IMAGE_EXTENSIONS.has(`.${linkedFile.extension}`.toLowerCase())) {
 						referencedImageFiles.add(linkedFile);
 					} else {
 						const cleanRef = ref.replace(/^\.\//, "").replace(/^images\//, "");
-						const candidate = filesByPath.get(`images/`) || filesByPath.get(ref);
-						if (candidate && IMAGE_EXTENSIONS.has(`.`.toLowerCase())) {
+						const candidate = filesByPath.get(`images/${cleanRef}`) || filesByPath.get(ref);
+						if (candidate && IMAGE_EXTENSIONS.has(`.${candidate.extension}`.toLowerCase())) {
 							referencedImageFiles.add(candidate);
 						}
 					}
@@ -229,7 +229,7 @@ export default class FireflySyncPlugin extends Plugin {
 			const relativeUnderImages = normPath.startsWith("images/")
 				? normPath.slice("images/".length)
 				: imgFile.name;
-			const targetRelativePath = ``;
+			const targetRelativePath = `${BLOG_IMAGES_PREFIX}${relativeUnderImages}`;
 			if (!addedTargetPaths.has(targetRelativePath)) {
 				syncFiles.push({
 					vaultPath: imgFile.path,
