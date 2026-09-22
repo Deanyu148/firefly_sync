@@ -1,6 +1,6 @@
 {
   "name": "firefly-sync",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Sync Obsidian Markdown posts to a FireFly Astro blog through Git.",
   "main": "dist/main.js",
   "scripts": {
