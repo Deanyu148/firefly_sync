@@ -153,6 +153,7 @@ export default class FireflySyncPlugin extends Plugin {
 				this.settings.commitMessage,
 				this.settings.remote,
 				branch,
+				this.settings.proxyUrl,
 			);
 			new Notice(message, 8000);
 			await this.refreshGitStatus(false);

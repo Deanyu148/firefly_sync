@@ -225,16 +225,23 @@ async function copyToBlog(repositoryPath, entries) {
     await (0, import_promises.copyFile)(entry.sourceAbsolutePath, target);
   }
 }
-async function commitAndPush(repositoryPath, relativePaths, commitMessage, remote, branch) {
+async function commitAndPush(repositoryPath, relativePaths, commitMessage, remote, branch, proxyUrl) {
   if (relativePaths.length === 0) throw new Error("\u6CA1\u6709\u53EF\u63D0\u4EA4\u7684\u6587\u4EF6\u3002");
   await runGit(repositoryPath, ["add", "--", ...relativePaths]);
   const staged = await runGit(repositoryPath, ["diff", "--cached", "--name-only", "--", ...relativePaths]);
   if (!staged.trim()) return "\u6CA1\u6709\u68C0\u6D4B\u5230\u65B0\u7684 Git \u4FEE\u6539\uFF0C\u672A\u521B\u5EFA\u63D0\u4EA4\u3002";
   await runGit(repositoryPath, ["commit", "-m", commitMessage, "--", ...relativePaths]);
-  const pushArgs = ["push", remote];
+  const pushArgs = [];
+  const cleanProxy = proxyUrl?.trim();
+  if (cleanProxy) {
+    pushArgs.push("-c", `http.proxy=${cleanProxy}`);
+  }
+  pushArgs.push("push", remote);
   if (branch) pushArgs.push(branch);
   await runGit(repositoryPath, pushArgs);
-  return `\u5DF2\u63D0\u4EA4 ${relativePaths.length} \u4E2A\u6587\u4EF6\u5E76\u63A8\u9001\u5230 ${remote}${branch ? `/${branch}` : ""}\u3002`;
+  const branchLabel = branch ? `/${branch}` : "";
+  const proxyLabel = cleanProxy ? `\uFF08\u7ECF\u4EE3\u7406 ${cleanProxy}\uFF09` : "";
+  return `\u5DF2\u63D0\u4EA4 ${relativePaths.length} \u4E2A\u6587\u4EF6\u5E76\u63A8\u9001\u5230 ${remote}${branchLabel}${proxyLabel}\u3002`;
 }
 function gitErrorMessage(error) {
   const gitError = error;
@@ -587,6 +594,7 @@ var DEFAULT_SETTINGS = {
   remote: "origin",
   branch: "",
   commitMessage: "\u540C\u6B65 Obsidian \u6587\u7AE0\u5230 FireFly",
+  proxyUrl: "",
   ignoreFolders: [".obsidian"]
 };
 async function pickDirectory(defaultPath) {
@@ -761,6 +769,12 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         await this.plugin.saveSettings();
       })
     );
+    new import_obsidian2.Setting(containerEl).setName("\u7F51\u7EDC\u4EE3\u7406").setDesc("\u53EF\u9009\u3002\u7528\u4E8E\u535A\u5BA2 Git \u63A8\u9001\uFF0C\u652F\u6301 http://, https://, socks4://, socks5://\uFF08\u4F8B\u5982 socks5://127.0.0.1:7897 \u6216 http://127.0.0.1:7890\uFF09\u3002\u7559\u7A7A\u5219\u76F4\u8FDE\u3002").addText(
+      (text) => text.setPlaceholder("socks5://127.0.0.1:7897").setValue(this.plugin.settings.proxyUrl || "").onChange(async (value) => {
+        this.plugin.settings.proxyUrl = value.trim();
+        await this.plugin.saveSettings();
+      })
+    );
     new import_obsidian2.Setting(containerEl).setName("Vault \u5FFD\u7565\u76EE\u5F55").setDesc("\u6574\u4E2A Vault \u6A21\u5F0F\u4E0D\u4F1A\u540C\u6B65\u8FD9\u4E9B\u76EE\u5F55\uFF0C\u9017\u53F7\u5206\u9694\u3002\u9ED8\u8BA4\u5FFD\u7565 .obsidian\u3002").addText(
       (text) => text.setValue(this.plugin.settings.ignoreFolders.join(", ")).onChange(async (value) => {
         this.plugin.settings.ignoreFolders = value.split(",").map((folder) => folder.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
@@ -899,7 +913,8 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
         previewsToSync.map((file) => file.targetRelativePath),
         this.settings.commitMessage,
         this.settings.remote,
-        branch
+        branch,
+        this.settings.proxyUrl
       );
       new import_obsidian3.Notice(message, 8e3);
       await this.refreshGitStatus(false);

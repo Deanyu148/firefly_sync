@@ -265,16 +265,24 @@ export async function commitAndPush(
 	commitMessage: string,
 	remote: string,
 	branch?: string,
+	proxyUrl?: string,
 ): Promise<string> {
 	if (relativePaths.length === 0) throw new Error("没有可提交的文件。");
 	await runGit(repositoryPath, ["add", "--", ...relativePaths]);
 	const staged = await runGit(repositoryPath, ["diff", "--cached", "--name-only", "--", ...relativePaths]);
 	if (!staged.trim()) return "没有检测到新的 Git 修改，未创建提交。";
 	await runGit(repositoryPath, ["commit", "-m", commitMessage, "--", ...relativePaths]);
-	const pushArgs = ["push", remote];
+	const pushArgs: string[] = [];
+	const cleanProxy = proxyUrl?.trim();
+	if (cleanProxy) {
+		pushArgs.push("-c", `http.proxy=${cleanProxy}`);
+	}
+	pushArgs.push("push", remote);
 	if (branch) pushArgs.push(branch);
 	await runGit(repositoryPath, pushArgs);
-	return `已提交 ${relativePaths.length} 个文件并推送到 ${remote}${branch ? `/${branch}` : ""}。`;
+	const branchLabel = branch ? `/${branch}` : "";
+	const proxyLabel = cleanProxy ? `（经代理 ${cleanProxy}）` : "";
+	return `已提交 ${relativePaths.length} 个文件并推送到 ${remote}${branchLabel}${proxyLabel}。`;
 }
 
 export function gitErrorMessage(error: unknown): string {

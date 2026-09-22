@@ -13,6 +13,7 @@ export interface FireflySyncSettings {
 	remote: string;
 	branch: string;
 	commitMessage: string;
+	proxyUrl: string;
 	ignoreFolders: string[];
 }
 
@@ -23,6 +24,7 @@ export const DEFAULT_SETTINGS: FireflySyncSettings = {
 	remote: "origin",
 	branch: "",
 	commitMessage: "同步 Obsidian 文章到 FireFly",
+	proxyUrl: "",
 	ignoreFolders: [".obsidian"],
 };
 
@@ -256,6 +258,20 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.commitMessage)
 					.onChange(async (value) => {
 						this.plugin.settings.commitMessage = value.trim() || DEFAULT_SETTINGS.commitMessage;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+
+		new Setting(containerEl)
+			.setName("网络代理")
+			.setDesc("可选。用于博客 Git 推送，支持 http://, https://, socks4://, socks5://（例如 socks5://127.0.0.1:7897 或 http://127.0.0.1:7890）。留空则直连。")
+			.addText((text) =>
+				text
+					.setPlaceholder("socks5://127.0.0.1:7897")
+					.setValue(this.plugin.settings.proxyUrl || "")
+					.onChange(async (value) => {
+						this.plugin.settings.proxyUrl = value.trim();
 						await this.plugin.saveSettings();
 					}),
 			);

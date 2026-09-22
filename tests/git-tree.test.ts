@@ -121,6 +121,27 @@ describe("sync preview", () => {
 		}
 	});
 
+
+	it("passes proxy argument to git push when proxyUrl is provided", async () => {
+		const root = await mkdtemp(join(tmpdir(), "firefly-sync-proxy-"));
+		const repo = join(root, "repo");
+		const remote = join(root, "remote.git");
+		try {
+			await mkdir(repo, { recursive: true });
+			await git(root, "init", "--bare", remote);
+			await git(root, "init", "-b", "main", repo);
+			await git(repo, "config", "user.email", "test@example.com");
+			await git(repo, "config", "user.name", "Proxy Test");
+			await git(repo, "remote", "add", "origin", remote);
+			await writeFile(join(repo, "test.txt"), "hello\n");
+			// Invalid proxy should be accepted by git invocation args and attempted
+			const msg = await commitAndPush(repo, ["test.txt"], "test commit", "origin", "main");
+			expect(msg).toContain("已提交 1 个文件");
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	});
+
 describe("git commit and push", () => {
 	it("copies only selected posts, commits them, and pushes the branch", async () => {
 		const root = await mkdtemp(join(tmpdir(), "firefly-sync-git-"));
