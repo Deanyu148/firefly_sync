@@ -1,9 +1,12 @@
-name: Release
+name: CI & Release
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "[0-9]+.[0-9]+.[0-9]+"
+  pull_request:
 
 permissions:
   contents: write
@@ -15,16 +18,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate tag format
+      - name: Validate tag format (if tagged)
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           TAG="${{ github.ref_name }}"
           if ! [[ "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Tag '$TAG' is not in x.x.x decimal format (without 'v')."
+            echo "Error: Tag '$TAG' is not in decimal x.x.x format (without 'v')."
             exit 1
           fi
           echo "Release version: $TAG"
 
-      - name: Sync version to manifest.json and package.json
+      - name: Sync version to plugin manifests (if tagged)
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           node -e '
             const fs = require("fs");
@@ -72,6 +77,7 @@ jobs:
         run: pnpm test
 
       - name: Package portable zip
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
           mkdir -p build/firefly-sync
           cp main.js manifest.json styles.css versions.json LICENSE README.md build/firefly-sync/
@@ -80,6 +86,7 @@ jobs:
           cd ..
 
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
