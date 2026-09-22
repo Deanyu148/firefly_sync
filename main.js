@@ -480,7 +480,7 @@ var DiffReviewModal = class extends import_obsidian.Modal {
     this.selected = /* @__PURE__ */ new Set();
     this.previews = previews;
     this.onSubmit = onSubmit;
-    this.selected = new Set(previews.map((preview) => preview.vaultPath));
+    this.selected = new Set(previews.map((preview) => preview.targetRelativePath));
     this.modalEl.addClass("firefly-sync-modal");
   }
   onOpen() {
@@ -495,7 +495,7 @@ var DiffReviewModal = class extends import_obsidian.Modal {
     const container = this.contentEl;
     container.empty();
     container.createEl("p", {
-      text: "\u8FD9\u91CC\u663E\u793A\u628A\u5F53\u524D Vault \u6587\u7AE0\u590D\u5236\u5230 FireFly \u7684 src/content/posts \u540E\u5C06\u4EA7\u751F\u7684 Git diff\u3002\u5DE6\u4FA7\u53EF\u53D6\u6D88\u5355\u4E2A\u6587\u4EF6\u3002",
+      text: "\u8FD9\u91CC\u663E\u793A\u590D\u5236\u5230 FireFly \u535A\u5BA2\u540E\u5C06\u4EA7\u751F\u7684 Git diff\u3002\u5DE6\u4FA7\u53EF\u53D6\u6D88\u52FE\u9009\u4E0D\u9700\u8981\u540C\u6B65\u7684\u6587\u4EF6\u3002",
       cls: "firefly-sync-setting-note"
     });
     const layout = container.createDiv({ cls: "firefly-sync-diff-layout" });
@@ -509,11 +509,12 @@ var DiffReviewModal = class extends import_obsidian.Modal {
     submit.addEventListener("click", () => {
       const paths = [...this.selected].sort();
       if (paths.length === 0) {
-        new import_obsidian.Notice("\u8BF7\u81F3\u5C11\u4FDD\u7559\u4E00\u7BC7\u6587\u7AE0\u3002");
+        new import_obsidian.Notice("\u8BF7\u81F3\u5C11\u4FDD\u7559\u4E00\u4E2A\u9700\u8981\u540C\u6B65\u7684\u6587\u4EF6\u3002");
         return;
       }
       this.close();
-      void this.onSubmit(paths);
+      const selectedPreviews = this.previews.filter((preview) => this.selected.has(preview.targetRelativePath));
+      void this.onSubmit(selectedPreviews);
     });
   }
   renderList() {
@@ -522,11 +523,11 @@ var DiffReviewModal = class extends import_obsidian.Modal {
     for (const preview of this.previews) {
       const row = this.listEl.createDiv({ cls: "firefly-sync-tree-row" });
       const checkbox = row.createEl("input", { type: "checkbox" });
-      checkbox.checked = this.selected.has(preview.vaultPath);
+      checkbox.checked = this.selected.has(preview.targetRelativePath);
       checkbox.addEventListener("click", (event) => event.stopPropagation());
       checkbox.addEventListener("change", () => {
-        if (checkbox.checked) this.selected.add(preview.vaultPath);
-        else this.selected.delete(preview.vaultPath);
+        if (checkbox.checked) this.selected.add(preview.targetRelativePath);
+        else this.selected.delete(preview.targetRelativePath);
       });
       row.createSpan({ cls: "firefly-sync-file-name", text: preview.targetRelativePath });
       row.createSpan({ cls: "firefly-sync-file-state", text: preview.statusLabel });
@@ -588,7 +589,7 @@ var DEFAULT_SETTINGS = {
   remote: "origin",
   branch: "",
   commitMessage: "\u540C\u6B65 Obsidian \u6587\u7AE0\u5230 FireFly",
-  ignoreFolders: [".obsidian", "images"]
+  ignoreFolders: [".obsidian"]
 };
 var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
   constructor(app, plugin) {
@@ -600,7 +601,7 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
     containerEl.empty();
     containerEl.createEl("h2", { text: "FireFly Sync" });
     containerEl.createEl("p", {
-      text: "\u914D\u7F6E\u672C\u5730 FireFly \u535A\u5BA2 Git \u4ED3\u5E93\u3002\u63D2\u4EF6\u53EA\u590D\u5236 Markdown \u6587\u7AE0\uFF0C\u4E0D\u5904\u7406\u56FE\u7247\u3002",
+      text: "\u914D\u7F6E\u672C\u5730 FireFly \u535A\u5BA2 Git \u4ED3\u5E93\u3002\u540C\u6B65\u65F6\u5C06\u590D\u5236 Markdown \u6587\u7AE0\u53CA images \u76EE\u5F55\u4E0B\u7684\u56FE\u7247\u3002",
       cls: "firefly-sync-setting-note"
     });
     new import_obsidian2.Setting(containerEl).setName("\u535A\u5BA2\u4ED3\u5E93\u8DEF\u5F84").setDesc("\u4F8B\u5982 E:\\FireFly\u3002\u5FC5\u987B\u662F\u5DF2\u7ECF\u521D\u59CB\u5316\u7684 Git \u4ED3\u5E93\u3002").addText(
@@ -627,7 +628,7 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("Vault \u5FFD\u7565\u76EE\u5F55").setDesc("\u6574\u4E2A Vault \u6A21\u5F0F\u4E0D\u4F1A\u540C\u6B65\u8FD9\u4E9B\u76EE\u5F55\uFF0C\u9017\u53F7\u5206\u9694\u3002\u9ED8\u8BA4\u5FFD\u7565 .obsidian\u3001images\u3002").addText(
+    new import_obsidian2.Setting(containerEl).setName("Vault \u5FFD\u7565\u76EE\u5F55").setDesc("\u6574\u4E2A Vault \u6A21\u5F0F\u4E0D\u4F1A\u540C\u6B65\u8FD9\u4E9B\u76EE\u5F55\uFF0C\u9017\u53F7\u5206\u9694\u3002\u9ED8\u8BA4\u5FFD\u7565 .obsidian\u3002").addText(
       (text) => text.setValue(this.plugin.settings.ignoreFolders.join(", ")).onChange(async (value) => {
         this.plugin.settings.ignoreFolders = value.split(",").map((folder) => folder.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
         await this.plugin.saveSettings();
@@ -638,7 +639,7 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
 
 // src/main.ts
 var VIEW_TYPE_FIREFLY_SYNC = "firefly-sync-view";
-var BLOG_POSTS_PREFIX = "src/content/posts/";
+var IMAGE_EXTENSIONS = /* @__PURE__ */ new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".bmp", ".ico"]);
 var FireflySyncPlugin = class extends import_obsidian3.Plugin {
   constructor() {
     super(...arguments);
@@ -728,29 +729,28 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
         currentFile?.path,
         statuses,
         mode,
-        (paths) => this.buildPreviews(paths),
-        (paths) => this.syncSelected(paths)
+        (paths) => this.buildPreviews(paths, mode),
+        (selectedPreviews) => this.syncFiles(selectedPreviews)
       ).open();
     } catch (error) {
       new import_obsidian3.Notice(`\u65E0\u6CD5\u6253\u5F00\u540C\u6B65\u9009\u62E9\u5668\uFF1A${gitErrorMessage(error)}`);
     }
   }
-  async buildPreviews(paths) {
+  async buildPreviews(paths, mode) {
     const repository = await this.getBlogRepositoryRoot();
-    const files = await this.getVaultSyncFiles(paths);
+    const files = await this.resolveAllSyncFiles(paths, mode);
     return getSyncPreviews(repository, files);
   }
-  async syncSelected(paths) {
-    if (paths.length === 0) return;
+  async syncFiles(previewsToSync) {
+    if (previewsToSync.length === 0) return;
     try {
       const repository = await this.getBlogRepositoryRoot();
-      const files = await this.getVaultSyncFiles(paths);
-      await copyToBlog(repository, files);
+      await copyToBlog(repository, previewsToSync);
       const branch = this.settings.branch || await getCurrentBranch(repository);
       if (!branch) throw new Error("\u5F53\u524D\u535A\u5BA2\u4ED3\u5E93\u5904\u4E8E detached HEAD \u72B6\u6001\uFF0C\u8BF7\u5728\u8BBE\u7F6E\u4E2D\u6307\u5B9A\u8981\u63A8\u9001\u7684\u5206\u652F\u3002");
       const message = await commitAndPush(
         repository,
-        files.map((file) => file.targetRelativePath),
+        previewsToSync.map((file) => file.targetRelativePath),
         this.settings.commitMessage,
         this.settings.remote,
         branch
@@ -758,28 +758,103 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       new import_obsidian3.Notice(message, 8e3);
       await this.refreshGitStatus(false);
     } catch (error) {
-      new import_obsidian3.Notice(`\u540C\u6B65\u5931\u8D25\uFF1A${gitErrorMessage(error)}`, 1e4);
+      new import_obsidian3.Notice(`\u540C\u6B65\u5931\u8D25\uFF1A`, 1e4);
       await this.refreshGitStatus(false);
     }
   }
-  async getVaultSyncFiles(paths) {
-    const filesByPath = new Map(this.app.vault.getMarkdownFiles().map((file) => [file.path, file]));
-    const uniquePaths = [...new Set(paths)];
+  async resolveAllSyncFiles(markdownPaths, mode) {
     const adapter = this.app.vault.adapter;
     if (!(adapter instanceof import_obsidian3.FileSystemAdapter)) {
       throw new Error("FireFly Sync \u4EC5\u652F\u6301\u684C\u9762\u7AEF\u7684\u672C\u5730\u6587\u4EF6\u7CFB\u7EDF Vault\u3002");
     }
     const vaultBasePath = adapter.getBasePath();
-    return uniquePaths.map((path) => {
+    const allFiles = this.app.vault.getFiles();
+    const filesByPath = new Map(allFiles.map((file) => [file.path, file]));
+    const syncFiles = [];
+    const addedTargetPaths = /* @__PURE__ */ new Set();
+    const uniqueMarkdownPaths = [...new Set(markdownPaths)];
+    for (const path of uniqueMarkdownPaths) {
       const file = filesByPath.get(path);
-      if (!file) throw new Error(`\u9009\u62E9\u7684\u6587\u7AE0\u4E0D\u5B58\u5728\uFF1A${path}`);
-      if (this.isIgnored(path)) throw new Error(`\u8BE5\u6587\u4EF6\u4F4D\u4E8E\u5FFD\u7565\u76EE\u5F55\uFF0C\u4E0D\u80FD\u540C\u6B65\uFF1A${path}`);
-      return {
+      if (!file) throw new Error(`\u9009\u62E9\u7684\u6587\u7AE0\u4E0D\u5B58\u5728\uFF1A`);
+      if (this.isIgnored(path)) throw new Error(`\u8BE5\u6587\u4EF6\u4F4D\u4E8E\u5FFD\u7565\u76EE\u5F55\uFF0C\u4E0D\u80FD\u540C\u6B65\uFF1A`);
+      const targetRelativePath = ``;
+      syncFiles.push({
         vaultPath: path,
         sourceAbsolutePath: (0, import_node_path2.join)(vaultBasePath, ...file.path.split("/")),
-        targetRelativePath: `${BLOG_POSTS_PREFIX}${file.path.replaceAll("\\", "/")}`
-      };
-    });
+        targetRelativePath
+      });
+      addedTargetPaths.add(targetRelativePath);
+    }
+    const imageFilesToSync = [];
+    if (mode === "vault") {
+      for (const file of allFiles) {
+        const normPath = file.path.replaceAll("\\", "/");
+        if (normPath.startsWith("images/") || normPath === "images") {
+          if (IMAGE_EXTENSIONS.has((0, import_node_path2.extname)(file.path).toLowerCase()) || file.extension) {
+            imageFilesToSync.push(file);
+          }
+        }
+      }
+    } else {
+      const referencedImageFiles = /* @__PURE__ */ new Set();
+      for (const mdPath of uniqueMarkdownPaths) {
+        const mdFile = filesByPath.get(mdPath);
+        if (!mdFile) continue;
+        const content = await this.app.vault.read(mdFile);
+        const imageRefs = this.extractImageReferences(content);
+        for (const ref of imageRefs) {
+          const linkedFile = this.app.metadataCache.getFirstLinkpathDest(ref, mdFile.path);
+          if (linkedFile && IMAGE_EXTENSIONS.has(`.`.toLowerCase())) {
+            referencedImageFiles.add(linkedFile);
+          } else {
+            const cleanRef = ref.replace(/^\.\//, "").replace(/^images\//, "");
+            const candidate = filesByPath.get(`images/`) || filesByPath.get(ref);
+            if (candidate && IMAGE_EXTENSIONS.has(`.`.toLowerCase())) {
+              referencedImageFiles.add(candidate);
+            }
+          }
+        }
+      }
+      imageFilesToSync.push(...referencedImageFiles);
+    }
+    for (const imgFile of imageFilesToSync) {
+      const normPath = imgFile.path.replaceAll("\\", "/");
+      const relativeUnderImages = normPath.startsWith("images/") ? normPath.slice("images/".length) : imgFile.name;
+      const targetRelativePath = ``;
+      if (!addedTargetPaths.has(targetRelativePath)) {
+        syncFiles.push({
+          vaultPath: imgFile.path,
+          sourceAbsolutePath: (0, import_node_path2.join)(vaultBasePath, ...imgFile.path.split("/")),
+          targetRelativePath
+        });
+        addedTargetPaths.add(targetRelativePath);
+      }
+    }
+    return syncFiles;
+  }
+  extractImageReferences(content) {
+    const results = /* @__PURE__ */ new Set();
+    const wikiRegex = /!\[\[([^|\]\r\n]+)(?:\|[^\r\n\]]*)?\]\]/g;
+    let match;
+    while ((match = wikiRegex.exec(content)) !== null) {
+      const ref = match[1]?.trim();
+      if (ref) results.add(ref);
+    }
+    const mdRegex = /!\[[^\]]*\]\(([^)\s]+)(?:\s+["\x27][^"\x27]*["\x27])?\)/g;
+    while ((match = mdRegex.exec(content)) !== null) {
+      const rawRef = match[1]?.trim().split("?")[0]?.split("#")[0];
+      if (rawRef && !rawRef.startsWith("http://") && !rawRef.startsWith("https://") && !rawRef.startsWith("data:")) {
+        results.add(rawRef);
+      }
+    }
+    const htmlRegex = /<img\s+[^>]*?src=["\x27]([^"\x27]+)["\x27]/gi;
+    while ((match = htmlRegex.exec(content)) !== null) {
+      const rawRef = match[1]?.trim().split("?")[0]?.split("#")[0];
+      if (rawRef && !rawRef.startsWith("http://") && !rawRef.startsWith("https://") && !rawRef.startsWith("data:")) {
+        results.add(rawRef);
+      }
+    }
+    return [...results];
   }
   async getBlogRepositoryRoot() {
     const configuredPath = this.settings.blogRepositoryPath.trim();
@@ -874,7 +949,7 @@ var FireflySyncView = class extends import_obsidian3.ItemView {
     const status = panel.createDiv({ cls: "firefly-sync-status" });
     status.createDiv({
       cls: "firefly-sync-status-line",
-      text: "\u9009\u62E9\u6587\u7AE0\u540E\u4F1A\u5148\u9884\u89C8\u76EE\u6807\u6587\u7AE0\u7684 Git diff\uFF1B\u786E\u8BA4\u540E\u53EA\u590D\u5236\u5E76\u63D0\u4EA4\u52FE\u9009\u7684 Markdown \u6587\u4EF6\u3002"
+      text: "\u9009\u62E9\u6587\u7AE0\u540E\u4F1A\u5148\u9884\u89C8\u76EE\u6807\u535A\u5BA2\u7684 Git diff\uFF1B\u786E\u8BA4\u540E\u53EA\u590D\u5236\u5E76\u63D0\u4EA4\u52FE\u9009\u7684\u6587\u4EF6\u3002"
     });
     const bottom = panel.createDiv({ cls: "firefly-sync-bottom" });
     const open = bottom.createEl("button", { text: "\u6253\u5F00\u540C\u6B65\u9009\u62E9\u5668", cls: "mod-cta" });

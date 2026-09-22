@@ -10,7 +10,7 @@ export interface SyncDialogResult {
 }
 
 export type PreviewLoader = (paths: string[]) => Promise<SyncPreview[]>;
-export type SyncSubmitter = (paths: string[]) => Promise<void>;
+export type SyncSubmitter = (selectedPreviews: SyncPreview[]) => Promise<void>;
 
 export class SyncSelectionModal extends Modal {
 	private readonly entries: SyncEntry[];
@@ -262,7 +262,7 @@ export class DiffReviewModal extends Modal {
 		super(app);
 		this.previews = previews;
 		this.onSubmit = onSubmit;
-		this.selected = new Set(previews.map((preview) => preview.vaultPath));
+		this.selected = new Set(previews.map((preview) => preview.targetRelativePath));
 		this.modalEl.addClass("firefly-sync-modal");
 	}
 
@@ -280,7 +280,7 @@ export class DiffReviewModal extends Modal {
 		const container = this.contentEl;
 		container.empty();
 		container.createEl("p", {
-			text: "这里显示把当前 Vault 文章复制到 FireFly 的 src/content/posts 后将产生的 Git diff。左侧可取消单个文件。",
+			text: "这里显示复制到 FireFly 博客后将产生的 Git diff。左侧可取消勾选不需要同步的文件。",
 			cls: "firefly-sync-setting-note",
 		});
 		const layout = container.createDiv({ cls: "firefly-sync-diff-layout" });
@@ -295,11 +295,12 @@ export class DiffReviewModal extends Modal {
 		submit.addEventListener("click", () => {
 			const paths = [...this.selected].sort();
 			if (paths.length === 0) {
-				new Notice("请至少保留一篇文章。");
+				new Notice("请至少保留一个需要同步的文件。");
 				return;
 			}
 			this.close();
-			void this.onSubmit(paths);
+			const selectedPreviews = this.previews.filter((preview) => this.selected.has(preview.targetRelativePath));
+			void this.onSubmit(selectedPreviews);
 		});
 	}
 
@@ -309,11 +310,11 @@ export class DiffReviewModal extends Modal {
 		for (const preview of this.previews) {
 			const row = this.listEl.createDiv({ cls: "firefly-sync-tree-row" });
 			const checkbox = row.createEl("input", { type: "checkbox" });
-			checkbox.checked = this.selected.has(preview.vaultPath);
+			checkbox.checked = this.selected.has(preview.targetRelativePath);
 			checkbox.addEventListener("click", (event) => event.stopPropagation());
 			checkbox.addEventListener("change", () => {
-				if (checkbox.checked) this.selected.add(preview.vaultPath);
-				else this.selected.delete(preview.vaultPath);
+				if (checkbox.checked) this.selected.add(preview.targetRelativePath);
+				else this.selected.delete(preview.targetRelativePath);
 			});
 			row.createSpan({ cls: "firefly-sync-file-name", text: preview.targetRelativePath });
 			row.createSpan({ cls: "firefly-sync-file-state", text: preview.statusLabel });

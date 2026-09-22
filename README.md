@@ -16,9 +16,9 @@ FireFly Sync 是一个 Obsidian 社区插件：它把选中的 Markdown 文章�
 ## 开发
 
 ```powershell
-npm install
-npm run build
-npm test
+pnpm install
+pnpm run build
+pnpm test
 ```
 
 `npm run build` 会生成 Obsidian 所需的根目录 `main.js`。社区插件发布包至少需要以下文件：

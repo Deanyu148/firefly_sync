@@ -237,7 +237,7 @@ function resolveRepositoryPath(repositoryPath: string, relativePath: string): st
 	return target;
 }
 
-function resolveBlogPostPath(repositoryPath: string, relativePath: string): string {
+export function resolveBlogPostPath(repositoryPath: string, relativePath: string): string {
 	const postsRoot = resolve(repositoryPath, "src", "content", "posts");
 	const target = resolveRepositoryPath(repositoryPath, relativePath);
 	const relation = relative(postsRoot, target);

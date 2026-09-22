@@ -1,6 +1,6 @@
 import { FileSystemAdapter, ItemView, Notice, Plugin, WorkspaceLeaf, setIcon } from "obsidian";
 import type { TFile } from "obsidian";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, extname, join } from "node:path";
 import {
 	assertGitRepository,
 	commitAndPush,
@@ -11,6 +11,7 @@ import {
 	gitErrorMessage,
 	runGit,
 	type GitFileStatus,
+	type SyncPreview,
 	type SyncPreviewInput,
 } from "./git";
 import { GitStatusModal, SyncSelectionModal } from "./modal";
@@ -19,6 +20,8 @@ import type { SelectionMode } from "./tree";
 
 export const VIEW_TYPE_FIREFLY_SYNC = "firefly-sync-view";
 const BLOG_POSTS_PREFIX = "src/content/posts/";
+const BLOG_IMAGES_PREFIX = "src/content/posts/images/";
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".bmp", ".ico"]);
 
 interface VaultSyncFile extends SyncPreviewInput {
 	vaultPath: string;
@@ -123,31 +126,30 @@ export default class FireflySyncPlugin extends Plugin {
 				currentFile?.path,
 				statuses,
 				mode,
-				(paths) => this.buildPreviews(paths),
-				(paths) => this.syncSelected(paths),
+				(paths) => this.buildPreviews(paths, mode),
+				(selectedPreviews) => this.syncFiles(selectedPreviews),
 			).open();
 		} catch (error) {
 			new Notice(`无法打开同步选择器：${gitErrorMessage(error)}`);
 		}
 	}
 
-	private async buildPreviews(paths: string[]) {
+	private async buildPreviews(paths: string[], mode: SelectionMode) {
 		const repository = await this.getBlogRepositoryRoot();
-		const files = await this.getVaultSyncFiles(paths);
+		const files = await this.resolveAllSyncFiles(paths, mode);
 		return getSyncPreviews(repository, files);
 	}
 
-	async syncSelected(paths: string[]): Promise<void> {
-		if (paths.length === 0) return;
+	async syncFiles(previewsToSync: SyncPreview[]): Promise<void> {
+		if (previewsToSync.length === 0) return;
 		try {
 			const repository = await this.getBlogRepositoryRoot();
-			const files = await this.getVaultSyncFiles(paths);
-			await copyToBlog(repository, files);
+			await copyToBlog(repository, previewsToSync);
 			const branch = this.settings.branch || (await getCurrentBranch(repository));
 			if (!branch) throw new Error("当前博客仓库处于 detached HEAD 状态，请在设置中指定要推送的分支。");
 			const message = await commitAndPush(
 				repository,
-				files.map((file) => file.targetRelativePath),
+				previewsToSync.map((file) => file.targetRelativePath),
 				this.settings.commitMessage,
 				this.settings.remote,
 				branch,
@@ -155,29 +157,114 @@ export default class FireflySyncPlugin extends Plugin {
 			new Notice(message, 8000);
 			await this.refreshGitStatus(false);
 		} catch (error) {
-			new Notice(`同步失败：${gitErrorMessage(error)}`, 10000);
+			new Notice(`同步失败：`, 10000);
 			await this.refreshGitStatus(false);
 		}
 	}
 
-	private async getVaultSyncFiles(paths: string[]): Promise<VaultSyncFile[]> {
-		const filesByPath = new Map(this.app.vault.getMarkdownFiles().map((file) => [file.path, file]));
-		const uniquePaths = [...new Set(paths)];
+	private async resolveAllSyncFiles(markdownPaths: string[], mode: SelectionMode): Promise<VaultSyncFile[]> {
 		const adapter = this.app.vault.adapter;
 		if (!(adapter instanceof FileSystemAdapter)) {
 			throw new Error("FireFly Sync 仅支持桌面端的本地文件系统 Vault。");
 		}
 		const vaultBasePath = adapter.getBasePath();
-		return uniquePaths.map((path) => {
+		const allFiles = this.app.vault.getFiles();
+		const filesByPath = new Map(allFiles.map((file) => [file.path, file]));
+
+		const syncFiles: VaultSyncFile[] = [];
+		const addedTargetPaths = new Set<string>();
+
+		// 1. Resolve markdown files
+		const uniqueMarkdownPaths = [...new Set(markdownPaths)];
+		for (const path of uniqueMarkdownPaths) {
 			const file = filesByPath.get(path);
-			if (!file) throw new Error(`选择的文章不存在：${path}`);
-			if (this.isIgnored(path)) throw new Error(`该文件位于忽略目录，不能同步：${path}`);
-			return {
+			if (!file) throw new Error(`选择的文章不存在：`);
+			if (this.isIgnored(path)) throw new Error(`该文件位于忽略目录，不能同步：`);
+			const targetRelativePath = ``;
+			syncFiles.push({
 				vaultPath: path,
 				sourceAbsolutePath: join(vaultBasePath, ...file.path.split("/")),
-				targetRelativePath: `${BLOG_POSTS_PREFIX}${file.path.replaceAll("\\", "/")}`,
-			};
-		});
+				targetRelativePath,
+			});
+			addedTargetPaths.add(targetRelativePath);
+		}
+
+		// 2. Resolve image files
+		const imageFilesToSync: TFile[] = [];
+		if (mode === "vault") {
+			for (const file of allFiles) {
+				const normPath = file.path.replaceAll("\\", "/");
+				if (normPath.startsWith("images/") || normPath === "images") {
+					if (IMAGE_EXTENSIONS.has(extname(file.path).toLowerCase()) || file.extension) {
+						imageFilesToSync.push(file);
+					}
+				}
+			}
+		} else {
+			const referencedImageFiles = new Set<TFile>();
+			for (const mdPath of uniqueMarkdownPaths) {
+				const mdFile = filesByPath.get(mdPath);
+				if (!mdFile) continue;
+				const content = await this.app.vault.read(mdFile);
+				const imageRefs = this.extractImageReferences(content);
+				for (const ref of imageRefs) {
+					const linkedFile = this.app.metadataCache.getFirstLinkpathDest(ref, mdFile.path);
+					if (linkedFile && IMAGE_EXTENSIONS.has(`.`.toLowerCase())) {
+						referencedImageFiles.add(linkedFile);
+					} else {
+						const cleanRef = ref.replace(/^\.\//, "").replace(/^images\//, "");
+						const candidate = filesByPath.get(`images/`) || filesByPath.get(ref);
+						if (candidate && IMAGE_EXTENSIONS.has(`.`.toLowerCase())) {
+							referencedImageFiles.add(candidate);
+						}
+					}
+				}
+			}
+			imageFilesToSync.push(...referencedImageFiles);
+		}
+
+		for (const imgFile of imageFilesToSync) {
+			const normPath = imgFile.path.replaceAll("\\", "/");
+			const relativeUnderImages = normPath.startsWith("images/")
+				? normPath.slice("images/".length)
+				: imgFile.name;
+			const targetRelativePath = ``;
+			if (!addedTargetPaths.has(targetRelativePath)) {
+				syncFiles.push({
+					vaultPath: imgFile.path,
+				sourceAbsolutePath: join(vaultBasePath, ...imgFile.path.split("/")),
+				targetRelativePath,
+			});
+				addedTargetPaths.add(targetRelativePath);
+			}
+		}
+
+		return syncFiles;
+	}
+
+	private extractImageReferences(content: string): string[] {
+		const results = new Set<string>();
+		const wikiRegex = /!\[\[([^|\]\r\n]+)(?:\|[^\r\n\]]*)?\]\]/g;
+		let match: RegExpExecArray | null;
+		while ((match = wikiRegex.exec(content)) !== null) {
+			const ref = match[1]?.trim();
+			if (ref) results.add(ref);
+		}
+		const mdRegex = /!\[[^\]]*\]\(([^)\s]+)(?:\s+["\x27][^"\x27]*["\x27])?\)/g;
+		while ((match = mdRegex.exec(content)) !== null) {
+			const rawRef = match[1]?.trim().split("?")[0]?.split("#")[0];
+			if (rawRef && !rawRef.startsWith("http://") && !rawRef.startsWith("https://") && !rawRef.startsWith("data:")) {
+				results.add(rawRef);
+			}
+		}
+		const htmlRegex = /<img\s+[^>]*?src=["\x27]([^"\x27]+)["\x27]/gi;
+		while ((match = htmlRegex.exec(content)) !== null) {
+			const rawRef = match[1]?.trim().split("?")[0]?.split("#")[0];
+			if (rawRef && !rawRef.startsWith("http://") && !rawRef.startsWith("https://") && !rawRef.startsWith("data:")) {
+				results.add(rawRef);
+			}
+		}
+		return [...results];
 	}
 
 	private async getBlogRepositoryRoot(): Promise<string> {
@@ -288,7 +375,7 @@ export class FireflySyncView extends ItemView {
 		const status = panel.createDiv({ cls: "firefly-sync-status" });
 		status.createDiv({
 			cls: "firefly-sync-status-line",
-			text: "选择文章后会先预览目标文章的 Git diff；确认后只复制并提交勾选的 Markdown 文件。",
+			text: "选择文章后会先预览目标博客的 Git diff；确认后只复制并提交勾选的文件。",
 		});
 		const bottom = panel.createDiv({ cls: "firefly-sync-bottom" });
 		const open = bottom.createEl("button", { text: "打开同步选择器", cls: "mod-cta" });

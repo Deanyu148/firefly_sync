@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS: FireflySyncSettings = {
 	remote: "origin",
 	branch: "",
 	commitMessage: "同步 Obsidian 文章到 FireFly",
-	ignoreFolders: [".obsidian", "images"],
+	ignoreFolders: [".obsidian"],
 };
 
 export class FireflySyncSettingTab extends PluginSettingTab {
@@ -30,7 +30,7 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl("h2", { text: "FireFly Sync" });
 		containerEl.createEl("p", {
-			text: "配置本地 FireFly 博客 Git 仓库。插件只复制 Markdown 文章，不处理图片。",
+			text: "配置本地 FireFly 博客 Git 仓库。同步时将复制 Markdown 文章及 images 目录下的图片。",
 			cls: "firefly-sync-setting-note",
 		});
 
@@ -85,7 +85,7 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Vault 忽略目录")
-			.setDesc("整个 Vault 模式不会同步这些目录，逗号分隔。默认忽略 .obsidian、images。")
+			.setDesc("整个 Vault 模式不会同步这些目录，逗号分隔。默认忽略 .obsidian。")
 			.addText((text) =>
 				text
 					.setValue(this.plugin.settings.ignoreFolders.join(", "))

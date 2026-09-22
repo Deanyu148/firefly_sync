@@ -76,6 +76,29 @@ describe("sync preview", () => {
 });
 
 
+
+	it("copies images and posts under src/content/posts/images and src/content/posts", async () => {
+		const root = await mkdtemp(join(tmpdir(), "firefly-sync-img-"));
+		const repo = join(root, "repo");
+		try {
+			await mkdir(join(repo, "src", "content", "posts"), { recursive: true });
+			const imgSource = join(root, "sample.png");
+			const postSource = join(root, "post.md");
+			await writeFile(imgSource, "image-bytes");
+			await writeFile(postSource, "# Hello");
+
+			await copyToBlog(repo, [
+				{ sourceAbsolutePath: postSource, targetRelativePath: "src/content/posts/post.md" },
+				{ sourceAbsolutePath: imgSource, targetRelativePath: "src/content/posts/images/sample.png" },
+			]);
+
+			expect(await readFile(join(repo, "src", "content", "posts", "post.md"), "utf8")).toBe("# Hello");
+			expect(await readFile(join(repo, "src", "content", "posts", "images", "sample.png"), "utf8")).toBe("image-bytes");
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	});
+
 describe("git commit and push", () => {
 	it("copies only selected posts, commits them, and pushes the branch", async () => {
 		const root = await mkdtemp(join(tmpdir(), "firefly-sync-git-"));
