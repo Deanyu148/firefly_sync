@@ -1083,6 +1083,73 @@ var FireflySyncSettingTab = class extends import_obsidian3.PluginSettingTab {
     super(app, plugin);
     this.plugin = plugin;
   }
+  /**
+   * Support Obsidian 1.13.0+ declarative settings search indexing
+   */
+  getSettingDefinitions() {
+    return [
+      {
+        type: "heading",
+        name: t().settingsTitle,
+        description: t().settingsHeaderDesc
+      },
+      {
+        type: "text",
+        name: t().settingRepoPathName,
+        description: t().settingRepoPathDesc,
+        key: "blogRepositoryPath"
+      },
+      {
+        type: "text",
+        name: t().settingPostsPathName,
+        description: t().settingPostsPathDesc,
+        key: "blogPostsPath"
+      },
+      {
+        type: "text",
+        name: t().settingImagesPathName,
+        description: t().settingImagesPathDesc,
+        key: "blogImagesPath"
+      },
+      {
+        type: "text",
+        name: t().settingRemoteName,
+        description: t().settingRemoteDesc,
+        key: "remote"
+      },
+      {
+        type: "text",
+        name: t().settingBranchName,
+        description: t().settingBranchDesc,
+        key: "branch"
+      },
+      {
+        type: "text",
+        name: t().settingCommitMsgName,
+        key: "commitMessage"
+      },
+      {
+        type: "text",
+        name: t().settingProxyName,
+        description: t().settingProxyDesc,
+        key: "proxyUrl"
+      },
+      {
+        type: "text",
+        name: t().settingIgnoredFoldersName,
+        description: t().settingIgnoredFoldersDesc,
+        key: "ignoreFolders"
+      },
+      {
+        type: "action",
+        name: t().settingContributeI18nName,
+        description: t().settingContributeI18nDesc,
+        action: () => {
+          window.open("https://github.com/Deanyu148/firefly_sync/issues/new?title=%5Bi18n%5D+Translation+Contribution&labels=enhancement,i18n", "_blank");
+        }
+      }
+    ];
+  }
   display() {
     const { containerEl } = this;
     containerEl.empty();
