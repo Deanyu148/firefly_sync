@@ -416,7 +416,6 @@ function t() {
 }
 
 // src/main.ts
-var import_promises2 = require("fs/promises");
 var import_obsidian4 = require("obsidian");
 var import_path3 = require("path");
 
@@ -1503,7 +1502,7 @@ var FireflySyncPlugin = class extends import_obsidian4.Plugin {
     await assertGitRepository(configuredPath);
     const repository = (await runGit(configuredPath, ["rev-parse", "--show-toplevel"])).trim();
     const postsDir = this.getPostsPrefix();
-    await (0, import_promises2.access)((0, import_path3.join)(repository, ...postsDir.split("/")));
+    await runGit(repository, ["status", "--porcelain", "--", postsDir]);
     return repository;
   }
   async assertFullVaultLayout() {
@@ -1517,10 +1516,9 @@ var FireflySyncPlugin = class extends import_obsidian4.Plugin {
     if (folder !== "firefly" || parent !== "firefly") {
       throw new Error(t().errFullVaultLayout(vaultPath));
     }
-    try {
-      const cfgDir = this.app.vault.configDir;
-      if (!(await (0, import_promises2.stat)((0, import_path3.join)(vaultPath, cfgDir))).isDirectory()) throw new Error("not a directory");
-    } catch {
+    const cfgDir = this.app.vault.configDir;
+    const hasConfig = await adapter.exists(cfgDir);
+    if (!hasConfig) {
       throw new Error(t().errMissingObsidianDir(vaultPath));
     }
   }

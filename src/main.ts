@@ -1,5 +1,4 @@
 import { t } from "./i18n";
-import { access, stat } from "fs/promises";
 import { FileSystemAdapter, ItemView, Notice, Plugin, WorkspaceLeaf, setIcon } from "obsidian";
 import type { TFile } from "obsidian";
 import { basename, dirname, extname, join } from "path";
@@ -290,7 +289,7 @@ export default class FireflySyncPlugin extends Plugin {
 		await assertGitRepository(configuredPath);
 		const repository = (await runGit(configuredPath, ["rev-parse", "--show-toplevel"])).trim();
 		const postsDir = this.getPostsPrefix();
-		await access(join(repository, ...postsDir.split("/")));
+		await runGit(repository, ["status", "--porcelain", "--", postsDir]);
 		return repository;
 	}
 
@@ -305,10 +304,9 @@ export default class FireflySyncPlugin extends Plugin {
 		if (folder !== "firefly" || parent !== "firefly") {
 			throw new Error(t().errFullVaultLayout(vaultPath));
 		}
-		try {
-			const cfgDir = this.app.vault.configDir;
-			if (!(await stat(join(vaultPath, cfgDir))).isDirectory()) throw new Error("not a directory");
-		} catch {
+		const cfgDir = this.app.vault.configDir;
+		const hasConfig = await adapter.exists(cfgDir);
+		if (!hasConfig) {
 			throw new Error(t().errMissingObsidianDir(vaultPath));
 		}
 	}
