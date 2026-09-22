@@ -1,7 +1,7 @@
 {
   "id": "firefly-sync",
   "name": "FireFly Sync",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "minAppVersion": "1.8.7",
   "description": "Sync Markdown notes and images to a FireFly Astro blog through Git.",
   "author": "Deanyu148",
