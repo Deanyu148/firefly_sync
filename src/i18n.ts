@@ -1,6 +1,4 @@
 // Obsidian language detection & Internationalization
-type ObsidianModule = { getLanguage?: () => string };
-
 export interface TranslationDict {
 	// Commands & Ribbon
 	cmdOpenSyncPanel: string;
@@ -515,10 +513,22 @@ export const translationsMap: Record<string, TranslationDict> = {
 	ja,
 };
 
+// Standard getLanguage from Obsidian API without require()
+import { getLanguage } from "obsidian";
+
 export function getAppLang(): string {
 	try {
-		const obs: ObsidianModule = typeof require === "function" ? require("obsidian") : {};
-		return (obs.getLanguage ? obs.getLanguage() : "en") || "en";
+		if (typeof getLanguage === "function") {
+			return getLanguage() || "en";
+		}
+		// Fallback for document or navigator
+		if (typeof document !== "undefined" && document.documentElement.lang) {
+			return document.documentElement.lang;
+		}
+		if (typeof navigator !== "undefined" && navigator.language) {
+			return navigator.language;
+		}
+		return "en";
 	} catch {
 		return "en";
 	}

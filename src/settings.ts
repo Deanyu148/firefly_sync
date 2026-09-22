@@ -26,7 +26,7 @@ export const DEFAULT_SETTINGS: FireflySyncSettings = {
 	branch: "",
 	commitMessage: t().defaultCommitMsg,
 	proxyUrl: "",
-	ignoreFolders: [".obsidian"],
+	ignoreFolders: [],
 };
 
 interface ElectronDialogResult {
@@ -303,7 +303,7 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		const defaultIgnore = this.app.vault.configDir || ".obsidian";
+		const defaultIgnore = this.app.vault.configDir;
 		new Setting(containerEl)
 			.setName(t().settingContributeI18nName)
 			.setDesc(t().settingContributeI18nDesc)

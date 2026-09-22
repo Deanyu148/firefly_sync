@@ -329,12 +329,12 @@ export class DiffReviewModal extends Modal {
 	private renderPreview(preview: SyncPreview): void {
 		if (!this.diffEl) return;
 		this.diffEl.empty();
-		this.diffEl.createEl("div", {
+		this.diffEl.createDiv({
 			cls: "firefly-sync-diff-title",
 			text: `${preview.targetRelativePath}  ·  ${preview.statusLabel}`,
 		});
 		if (!preview.diff) {
-			this.diffEl.createEl("div", {
+			this.diffEl.createDiv({
 				text: t().diffNoChange,
 				cls: "firefly-sync-setting-note",
 			});

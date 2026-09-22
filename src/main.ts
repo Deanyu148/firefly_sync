@@ -61,12 +61,16 @@ export default class FireflySyncPlugin extends Plugin {
 	}
 
 	onunload(): void {
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_FIREFLY_SYNC);
+		// Do not detach leaves in onunload to preserve leaf position chosen by the user
 	}
 
 	async loadSettings(): Promise<void> {
 		const loaded = (await this.loadData()) as Partial<FireflySyncSettings> | null;
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded ?? {});
+		const cfgDir = this.app.vault.configDir || ".obsidian";
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, { ignoreFolders: [cfgDir] }, loaded ?? {});
+		if (!this.settings.ignoreFolders || this.settings.ignoreFolders.length === 0) {
+			this.settings.ignoreFolders = [cfgDir];
+		}
 	}
 
 	async saveSettings(): Promise<void> {
@@ -311,7 +315,9 @@ export default class FireflySyncPlugin extends Plugin {
 
 	private isIgnored(path: string): boolean {
 		const normalized = path.replaceAll("\\", "/");
-		return this.settings.ignoreFolders.some((folder) => {
+		const cfgDir = this.app.vault.configDir || ".obsidian";
+		const dynamicIgnores = this.settings.ignoreFolders.map((f) => f === ".obsidian" ? cfgDir : f);
+		return dynamicIgnores.some((folder) => {
 			const cleaned = folder.trim().replaceAll("\\", "/").replace(/^\/+|\/+$/g, "");
 			return cleaned.length > 0 && (normalized === cleaned || normalized.startsWith(`${cleaned}/`));
 		});

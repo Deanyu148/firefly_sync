@@ -27,6 +27,7 @@ __export(main_exports, {
 module.exports = __toCommonJS(main_exports);
 
 // src/i18n.ts
+var import_obsidian = require("obsidian");
 var en = {
   cmdOpenSyncPanel: "Open sync panel",
   cmdSyncCurrentNote: "Sync current note",
@@ -388,8 +389,16 @@ var translationsMap = {
 };
 function getAppLang() {
   try {
-    const obs = typeof require === "function" ? require("obsidian") : {};
-    return (obs.getLanguage ? obs.getLanguage() : "en") || "en";
+    if (typeof import_obsidian.getLanguage === "function") {
+      return (0, import_obsidian.getLanguage)() || "en";
+    }
+    if (typeof document !== "undefined" && document.documentElement.lang) {
+      return document.documentElement.lang;
+    }
+    if (typeof navigator !== "undefined" && navigator.language) {
+      return navigator.language;
+    }
+    return "en";
   } catch {
     return "en";
   }
@@ -408,7 +417,7 @@ function t() {
 
 // src/main.ts
 var import_promises2 = require("fs/promises");
-var import_obsidian3 = require("obsidian");
+var import_obsidian4 = require("obsidian");
 var import_path3 = require("path");
 
 // src/git.ts
@@ -634,7 +643,7 @@ function toText(value) {
 }
 
 // src/modal.ts
-var import_obsidian = require("obsidian");
+var import_obsidian2 = require("obsidian");
 
 // src/tree.ts
 function buildTree(entries) {
@@ -669,7 +678,7 @@ function buildTree(entries) {
 }
 
 // src/modal.ts
-var SyncSelectionModal = class extends import_obsidian.Modal {
+var SyncSelectionModal = class extends import_obsidian2.Modal {
   constructor(app, entries, currentPath, gitStatuses, defaultMode, loadPreviews, onSubmit, postsPrefix = "src/content/posts") {
     super(app);
     this.selected = /* @__PURE__ */ new Set();
@@ -700,14 +709,14 @@ var SyncSelectionModal = class extends import_obsidian.Modal {
       text: t().modalSelectNote,
       cls: "firefly-sync-setting-note"
     });
-    new import_obsidian.Setting(container).setName(t().modalSyncScopeName).setDesc(t().modalSyncScopeDesc).addDropdown(
+    new import_obsidian2.Setting(container).setName(t().modalSyncScopeName).setDesc(t().modalSyncScopeDesc).addDropdown(
       (dropdown) => dropdown.addOption("current", t().scopeCurrent).addOption("vault", t().scopeVault).setValue(this.mode).onChange((value) => {
         this.mode = value;
         this.initializeSelection();
         this.renderTree();
       })
     );
-    new import_obsidian.Setting(container).setName(t().modalFilterName).addText(
+    new import_obsidian2.Setting(container).setName(t().modalFilterName).addText(
       (text) => text.setPlaceholder(t().modalFilterPlaceholder).onChange((value) => {
         this.searchQuery = value.toLocaleLowerCase().trim();
         this.renderTree();
@@ -838,24 +847,24 @@ var SyncSelectionModal = class extends import_obsidian.Modal {
       const previews = await this.loadPreviews([path]);
       new DiffReviewModal(this.app, previews, this.onSubmit).open();
     } catch (error) {
-      new import_obsidian.Notice(t().noticeDiffError(error instanceof Error ? error.message : String(error)));
+      new import_obsidian2.Notice(t().noticeDiffError(error instanceof Error ? error.message : String(error)));
     }
   }
   async showDiffForSelection() {
     const paths = [...this.selected].sort();
     if (paths.length === 0) {
-      new import_obsidian.Notice(t().noticeSelectAtLeastOne);
+      new import_obsidian2.Notice(t().noticeSelectAtLeastOne);
       return;
     }
     try {
       const previews = await this.loadPreviews(paths);
       new DiffReviewModal(this.app, previews, this.onSubmit).open();
     } catch (error) {
-      new import_obsidian.Notice(t().noticeDiffError(error instanceof Error ? error.message : String(error)));
+      new import_obsidian2.Notice(t().noticeDiffError(error instanceof Error ? error.message : String(error)));
     }
   }
 };
-var DiffReviewModal = class extends import_obsidian.Modal {
+var DiffReviewModal = class extends import_obsidian2.Modal {
   constructor(app, previews, onSubmit) {
     super(app);
     this.selected = /* @__PURE__ */ new Set();
@@ -890,7 +899,7 @@ var DiffReviewModal = class extends import_obsidian.Modal {
     submit.addEventListener("click", () => {
       const paths = [...this.selected].sort();
       if (paths.length === 0) {
-        new import_obsidian.Notice(t().noticeKeepAtLeastOne);
+        new import_obsidian2.Notice(t().noticeKeepAtLeastOne);
         return;
       }
       this.close();
@@ -918,12 +927,12 @@ var DiffReviewModal = class extends import_obsidian.Modal {
   renderPreview(preview) {
     if (!this.diffEl) return;
     this.diffEl.empty();
-    this.diffEl.createEl("div", {
+    this.diffEl.createDiv({
       cls: "firefly-sync-diff-title",
       text: `${preview.targetRelativePath}  \xB7  ${preview.statusLabel}`
     });
     if (!preview.diff) {
-      this.diffEl.createEl("div", {
+      this.diffEl.createDiv({
         text: t().diffNoChange,
         cls: "firefly-sync-setting-note"
       });
@@ -939,7 +948,7 @@ var DiffReviewModal = class extends import_obsidian.Modal {
     }
   }
 };
-var GitStatusModal = class extends import_obsidian.Modal {
+var GitStatusModal = class extends import_obsidian2.Modal {
   constructor(app, status) {
     super(app);
     this.status = status;
@@ -964,7 +973,7 @@ var GitStatusModal = class extends import_obsidian.Modal {
 };
 
 // src/settings.ts
-var import_obsidian2 = require("obsidian");
+var import_obsidian3 = require("obsidian");
 var import_child_process2 = require("child_process");
 var import_util2 = require("util");
 var import_path2 = require("path");
@@ -977,7 +986,7 @@ var DEFAULT_SETTINGS = {
   branch: "",
   commitMessage: t().defaultCommitMsg,
   proxyUrl: "",
-  ignoreFolders: [".obsidian"]
+  ignoreFolders: []
 };
 async function pickDirectory(defaultPath) {
   try {
@@ -1069,7 +1078,7 @@ async function pickDirectory(defaultPath) {
     input.click();
   });
 }
-var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
+var FireflySyncSettingTab = class extends import_obsidian3.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -1077,9 +1086,9 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    new import_obsidian2.Setting(containerEl).setName(t().settingsTitle).setDesc(t().settingsHeaderDesc).setHeading();
+    new import_obsidian3.Setting(containerEl).setName(t().settingsTitle).setDesc(t().settingsHeaderDesc).setHeading();
     let repoTextInput;
-    new import_obsidian2.Setting(containerEl).setName(t().settingRepoPathName).setDesc(t().settingRepoPathDesc).addText((text) => {
+    new import_obsidian3.Setting(containerEl).setName(t().settingRepoPathName).setDesc(t().settingRepoPathDesc).addText((text) => {
       repoTextInput = text.inputEl;
       text.setPlaceholder("E:\\FireFly").setValue(this.plugin.settings.blogRepositoryPath).onChange(async (value) => {
         this.plugin.settings.blogRepositoryPath = value.trim();
@@ -1096,7 +1105,7 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
       })
     );
     let postsTextInput;
-    new import_obsidian2.Setting(containerEl).setName(t().settingPostsPathName).setDesc(t().settingPostsPathDesc).addText((text) => {
+    new import_obsidian3.Setting(containerEl).setName(t().settingPostsPathName).setDesc(t().settingPostsPathDesc).addText((text) => {
       postsTextInput = text.inputEl;
       text.setPlaceholder("src/content/posts").setValue(this.plugin.settings.blogPostsPath || DEFAULT_SETTINGS.blogPostsPath).onChange(async (value) => {
         this.plugin.settings.blogPostsPath = this.normalizeRelativePath(value.trim()) || DEFAULT_SETTINGS.blogPostsPath;
@@ -1116,7 +1125,7 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
       })
     );
     let imagesTextInput;
-    new import_obsidian2.Setting(containerEl).setName(t().settingImagesPathName).setDesc(t().settingImagesPathDesc).addText((text) => {
+    new import_obsidian3.Setting(containerEl).setName(t().settingImagesPathName).setDesc(t().settingImagesPathDesc).addText((text) => {
       imagesTextInput = text.inputEl;
       text.setPlaceholder("src/content/posts/images").setValue(this.plugin.settings.blogImagesPath || DEFAULT_SETTINGS.blogImagesPath).onChange(async (value) => {
         this.plugin.settings.blogImagesPath = this.normalizeRelativePath(value.trim()) || DEFAULT_SETTINGS.blogImagesPath;
@@ -1135,37 +1144,37 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         }
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t().settingRemoteName).setDesc(t().settingRemoteDesc).addText(
+    new import_obsidian3.Setting(containerEl).setName(t().settingRemoteName).setDesc(t().settingRemoteDesc).addText(
       (text) => text.setValue(this.plugin.settings.remote).onChange(async (value) => {
         this.plugin.settings.remote = value.trim() || "origin";
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t().settingBranchName).setDesc(t().settingBranchDesc).addText(
+    new import_obsidian3.Setting(containerEl).setName(t().settingBranchName).setDesc(t().settingBranchDesc).addText(
       (text) => text.setPlaceholder("main").setValue(this.plugin.settings.branch).onChange(async (value) => {
         this.plugin.settings.branch = value.trim();
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t().settingCommitMsgName).addText(
+    new import_obsidian3.Setting(containerEl).setName(t().settingCommitMsgName).addText(
       (text) => text.setValue(this.plugin.settings.commitMessage).onChange(async (value) => {
         this.plugin.settings.commitMessage = value.trim() || DEFAULT_SETTINGS.commitMessage;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t().settingProxyName).setDesc(t().settingProxyDesc).addText(
+    new import_obsidian3.Setting(containerEl).setName(t().settingProxyName).setDesc(t().settingProxyDesc).addText(
       (text) => text.setPlaceholder("socks5://127.0.0.1:7897").setValue(this.plugin.settings.proxyUrl || "").onChange(async (value) => {
         this.plugin.settings.proxyUrl = value.trim();
         await this.plugin.saveSettings();
       })
     );
-    const defaultIgnore = this.app.vault.configDir || ".obsidian";
-    new import_obsidian2.Setting(containerEl).setName(t().settingContributeI18nName).setDesc(t().settingContributeI18nDesc).addButton(
+    const defaultIgnore = this.app.vault.configDir;
+    new import_obsidian3.Setting(containerEl).setName(t().settingContributeI18nName).setDesc(t().settingContributeI18nDesc).addButton(
       (button) => button.setButtonText(t().btnContributeI18n).setCta().onClick(() => {
         window.open("https://github.com/Deanyu148/firefly_sync/issues/new?title=%5Bi18n%5D+Translation+Contribution&labels=enhancement,i18n", "_blank");
       })
     );
-    new import_obsidian2.Setting(containerEl).setName(t().settingIgnoredFoldersName).setDesc(t().settingIgnoredFoldersDesc).addText(
+    new import_obsidian3.Setting(containerEl).setName(t().settingIgnoredFoldersName).setDesc(t().settingIgnoredFoldersDesc).addText(
       (text) => text.setValue(this.plugin.settings.ignoreFolders.join(", ")).onChange(async (value) => {
         this.plugin.settings.ignoreFolders = value.split(",").map((folder) => folder.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
         if (this.plugin.settings.ignoreFolders.length === 0) {
@@ -1192,7 +1201,7 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
 // src/main.ts
 var VIEW_TYPE_FIREFLY_SYNC = "firefly-sync-view";
 var IMAGE_EXTENSIONS = /* @__PURE__ */ new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".bmp", ".ico"]);
-var FireflySyncPlugin = class extends import_obsidian3.Plugin {
+var FireflySyncPlugin = class extends import_obsidian4.Plugin {
   constructor() {
     super(...arguments);
     this.settings = DEFAULT_SETTINGS;
@@ -1225,11 +1234,14 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
     this.registerView(VIEW_TYPE_FIREFLY_SYNC, (leaf) => new FireflySyncView(leaf, this));
   }
   onunload() {
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_FIREFLY_SYNC);
   }
   async loadSettings() {
     const loaded = await this.loadData();
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded ?? {});
+    const cfgDir = this.app.vault.configDir || ".obsidian";
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, { ignoreFolders: [cfgDir] }, loaded ?? {});
+    if (!this.settings.ignoreFolders || this.settings.ignoreFolders.length === 0) {
+      this.settings.ignoreFolders = [cfgDir];
+    }
   }
   async saveSettings() {
     await this.saveData(this.settings);
@@ -1240,7 +1252,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
     if (!leaf) {
       leaf = this.app.workspace.getRightLeaf(false) ?? void 0;
       if (!leaf) {
-        new import_obsidian3.Notice(t().noticeCannotOpenRightLeaf);
+        new import_obsidian4.Notice(t().noticeCannotOpenRightLeaf);
         return;
       }
       await leaf.setViewState({ type: VIEW_TYPE_FIREFLY_SYNC, active: true });
@@ -1264,7 +1276,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       this.statusByPath = new Map(statuses.map((status) => [status.path, status]));
       await this.refreshView();
     } catch (error) {
-      if (showError) new import_obsidian3.Notice(t().noticeReadGitStatusFailed(gitErrorMessage(error)));
+      if (showError) new import_obsidian4.Notice(t().noticeReadGitStatusFailed(gitErrorMessage(error)));
     }
   }
   async openSelectionModal(currentFile, mode = "current") {
@@ -1286,7 +1298,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
         this.getPostsPrefix()
       ).open();
     } catch (error) {
-      new import_obsidian3.Notice(t().noticeOpenSelectorFailed(gitErrorMessage(error)));
+      new import_obsidian4.Notice(t().noticeOpenSelectorFailed(gitErrorMessage(error)));
     }
   }
   async buildPreviews(paths, mode) {
@@ -1309,10 +1321,10 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
         branch,
         this.settings.proxyUrl
       );
-      new import_obsidian3.Notice(message, 8e3);
+      new import_obsidian4.Notice(message, 8e3);
       await this.refreshGitStatus(false);
     } catch (error) {
-      new import_obsidian3.Notice(t().noticeSyncFailed(gitErrorMessage(error)), 1e4);
+      new import_obsidian4.Notice(t().noticeSyncFailed(gitErrorMessage(error)), 1e4);
       await this.refreshGitStatus(false);
     }
   }
@@ -1326,7 +1338,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
   }
   async resolveAllSyncFiles(markdownPaths, mode) {
     const adapter = this.app.vault.adapter;
-    if (!(adapter instanceof import_obsidian3.FileSystemAdapter)) {
+    if (!(adapter instanceof import_obsidian4.FileSystemAdapter)) {
       throw new Error(t().errDesktopOnly);
     }
     const vaultBasePath = adapter.getBasePath();
@@ -1429,7 +1441,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
   }
   async assertFullVaultLayout() {
     const adapter = this.app.vault.adapter;
-    if (!(adapter instanceof import_obsidian3.FileSystemAdapter)) {
+    if (!(adapter instanceof import_obsidian4.FileSystemAdapter)) {
       throw new Error(t().errDesktopOnly);
     }
     const vaultPath = adapter.getBasePath();
@@ -1447,13 +1459,15 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
   }
   isIgnored(path) {
     const normalized = path.replaceAll("\\", "/");
-    return this.settings.ignoreFolders.some((folder) => {
+    const cfgDir = this.app.vault.configDir || ".obsidian";
+    const dynamicIgnores = this.settings.ignoreFolders.map((f) => f === ".obsidian" ? cfgDir : f);
+    return dynamicIgnores.some((folder) => {
       const cleaned = folder.trim().replaceAll("\\", "/").replace(/^\/+|\/+$/g, "");
       return cleaned.length > 0 && (normalized === cleaned || normalized.startsWith(`${cleaned}/`));
     });
   }
 };
-var FireflySyncView = class extends import_obsidian3.ItemView {
+var FireflySyncView = class extends import_obsidian4.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
     this.plugin = plugin;
@@ -1482,13 +1496,13 @@ var FireflySyncView = class extends import_obsidian3.ItemView {
     const panel = container.createDiv({ cls: "firefly-sync-panel" });
     const toolbar = panel.createDiv({ cls: "firefly-sync-toolbar" });
     const icon = toolbar.createSpan({ cls: "firefly-sync-toolbar-icon" });
-    (0, import_obsidian3.setIcon)(icon, "git-pull-request");
+    (0, import_obsidian4.setIcon)(icon, "git-pull-request");
     toolbar.createSpan({ cls: "firefly-sync-title", text: "FireFly Sync" });
     const refresh = toolbar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": t().refreshAriaLabel } });
-    (0, import_obsidian3.setIcon)(refresh, "refresh-cw");
+    (0, import_obsidian4.setIcon)(refresh, "refresh-cw");
     refresh.addEventListener("click", () => void this.plugin.refreshGitStatus());
     const settings = toolbar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": t().settingsAriaLabel } });
-    (0, import_obsidian3.setIcon)(settings, "settings");
+    (0, import_obsidian4.setIcon)(settings, "settings");
     settings.addEventListener("click", () => {
       const setting = this.app.setting;
       setting?.open();
