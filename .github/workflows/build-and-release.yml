@@ -57,9 +57,9 @@ jobs:
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
-            dist/main.js
-            dist/manifest.json
-            dist/styles.css
+            main.js
+            manifest.json
+            styles.css
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -71,6 +71,6 @@ jobs:
           prerelease: false
           generate_release_notes: true
           files: |
-            dist/main.js
-            dist/manifest.json
-            dist/styles.css
+            main.js
+            manifest.json
+            styles.css
