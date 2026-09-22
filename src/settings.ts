@@ -305,6 +305,18 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 
 		const defaultIgnore = this.app.vault.configDir || ".obsidian";
 		new Setting(containerEl)
+			.setName(t().settingContributeI18nName)
+			.setDesc(t().settingContributeI18nDesc)
+			.addButton((button) =>
+				button
+					.setButtonText(t().btnContributeI18n)
+					.setCta()
+					.onClick(() => {
+						window.open("https://github.com/Deanyu148/firefly_sync/issues/new?title=%5Bi18n%5D+Translation+Contribution&labels=enhancement,i18n", "_blank");
+					}),
+			);
+
+		new Setting(containerEl)
 			.setName(t().settingIgnoredFoldersName)
 			.setDesc(t().settingIgnoredFoldersDesc)
 			.addText((text) =>

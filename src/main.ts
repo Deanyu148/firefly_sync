@@ -57,7 +57,7 @@ export default class FireflySyncPlugin extends Plugin {
 		});
 		this.addRibbonIcon("git-pull-request", t().ribbonTitle, () => void this.activateView());
 		this.registerView(VIEW_TYPE_FIREFLY_SYNC, (leaf) => new FireflySyncView(leaf, this));
-		this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.refreshView()));
+		// Only refresh view when settings change or status updates, not on every leaf activation to preserve click events
 	}
 
 	onunload(): void {

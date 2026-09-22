@@ -28,12 +28,10 @@ module.exports = __toCommonJS(main_exports);
 
 // src/i18n.ts
 var en = {
-  // Commands & Ribbon
   cmdOpenSyncPanel: "Open sync panel",
   cmdSyncCurrentNote: "Sync current note",
   cmdSyncFullVault: "Sync full FireFly vault",
   ribbonTitle: "Open FireFly Sync",
-  // Notices & Errors
   noticeCannotOpenRightLeaf: "Unable to open the FireFly Sync side panel.",
   noticeReadGitStatusFailed: (err) => `Failed to read blog Git status: ${err}`,
   noticeOpenSelectorFailed: (err) => `Unable to open sync selector: ${err}`,
@@ -45,12 +43,11 @@ var en = {
   errNoteIgnored: (path) => `File is in an ignored folder and cannot be synced: ${path}`,
   errConfigRepoFirst: "Please configure the FireFly blog repository path in plugin settings (e.g. E:\\FireFly).",
   errFullVaultLayout: (path) => `Full vault sync requires a path structured as <workspace>\\firefly\\firefly. Current vault: ${path}`,
-  errMissingObsidianDir: (path) => `Vault root missing .obsidian: ${path}`,
+  errMissingObsidianDir: (path) => `Vault root missing configuration directory: ${path}`,
   errNoFilesToCommit: "No files to commit.",
   msgNoGitChanges: "No new Git changes detected, commit not created.",
   msgCommittedAndPushed: (count, remote, branchLabel, proxyLabel) => `Committed ${count} files and pushed to ${remote}${branchLabel}${proxyLabel}.`,
   proxyLabel: (proxy) => ` (via proxy ${proxy})`,
-  // Git Status Labels
   statusAdded: "Added",
   statusModified: "Modified",
   statusUntracked: "Untracked",
@@ -59,7 +56,6 @@ var en = {
   statusConflicted: "Conflicted",
   statusUnchanged: "Unchanged",
   statusPending: "Pending",
-  // Sidebar View
   viewTitle: "FireFly Sync",
   refreshAriaLabel: "Refresh Git status",
   settingsAriaLabel: "Open FireFly Sync settings",
@@ -71,7 +67,6 @@ var en = {
   btnOpenSelector: "Open Sync Selector",
   sidebarEmptyNoRepo: "Working tree changes will appear here after configuring the blog repository.",
   sidebarEmptyClean: "Blog working directory is clean.",
-  // Settings Tab
   settingsTitle: "FireFly Sync",
   settingsHeaderDesc: "Configure local FireFly blog repository, post directory, and media attachment path.",
   settingRepoPathName: "Blog repository path",
@@ -89,13 +84,15 @@ var en = {
   settingBranchName: "Push branch",
   settingBranchDesc: "Leave empty to use the current checked-out branch.",
   settingCommitMsgName: "Commit message",
-  defaultCommitMsg: "Sync Obsidian notes to FireFly",
+  defaultCommitMsg: "Sync notes to FireFly",
   settingProxyName: "Network proxy",
   settingProxyDesc: "Optional. Used for Git push. Supports http://, https://, socks4://, socks5:// (e.g. socks5://127.0.0.1:7897). Leave blank for direct connection.",
   settingIgnoredFoldersName: "Vault ignored folders",
-  settingIgnoredFoldersDesc: "Full vault mode will skip these folders, comma-separated. Default: .obsidian.",
+  settingIgnoredFoldersDesc: "Full vault mode will skip these folders, comma-separated. Default: current vault config directory.",
   dialogSelectDirectory: "Select Directory",
-  // Modals
+  settingContributeI18nName: "Contribute translation",
+  settingContributeI18nDesc: "Help localize FireFly Sync into your language by submitting a translation or improvement on GitHub.",
+  btnContributeI18n: "Contribute on GitHub",
   modalSelectTitle: "Select Posts to Sync",
   modalSelectNote: "Select markdown notes using the vault tree. A git diff preview will be shown before pushing to the blog.",
   modalSyncScopeName: "Sync Scope",
@@ -112,24 +109,20 @@ var en = {
   selectionCount: (count, isCurrent) => `${count} notes selected${isCurrent ? " (active note default)" : ""}`,
   noticeSelectAtLeastOne: "Please select at least one note.",
   noticeDiffError: (err) => `Failed to generate diff: ${err}`,
-  // Diff Modal
   modalDiffTitle: "Review Git Diff",
   modalDiffNote: "Review git changes that will be copied and pushed to the FireFly blog. Uncheck any files to exclude.",
   btnBack: "Back",
   btnSyncAndPush: "Sync & Push",
   noticeKeepAtLeastOne: "Please keep at least one file selected.",
   diffNoChange: "No diff. Synchronizing this file will not alter content in the target repository.",
-  // Status Modal
   statusModalTitle: (path) => `Git Change \xB7 ${path}`,
   statusModalEmpty: "No diff available to display."
 };
 var zh = {
-  // Commands & Ribbon
   cmdOpenSyncPanel: "\u6253\u5F00\u540C\u6B65\u9762\u677F",
   cmdSyncCurrentNote: "\u540C\u6B65\u5F53\u524D\u6587\u7AE0",
   cmdSyncFullVault: "\u540C\u6B65\u6574\u4E2A FireFly Vault",
   ribbonTitle: "\u6253\u5F00 FireFly Sync",
-  // Notices & Errors
   noticeCannotOpenRightLeaf: "\u65E0\u6CD5\u6253\u5F00\u53F3\u4FA7 FireFly Sync \u9762\u677F\u3002",
   noticeReadGitStatusFailed: (err) => `\u8BFB\u53D6\u535A\u5BA2 Git \u72B6\u6001\u5931\u8D25\uFF1A${err}`,
   noticeOpenSelectorFailed: (err) => `\u65E0\u6CD5\u6253\u5F00\u540C\u6B65\u9009\u62E9\u5668\uFF1A${err}`,
@@ -141,12 +134,11 @@ var zh = {
   errNoteIgnored: (path) => `\u8BE5\u6587\u4EF6\u4F4D\u4E8E\u5FFD\u7565\u76EE\u5F55\uFF0C\u4E0D\u80FD\u540C\u6B65\uFF1A${path}`,
   errConfigRepoFirst: "\u8BF7\u5148\u5728\u63D2\u4EF6\u8BBE\u7F6E\u4E2D\u586B\u5199 FireFly \u535A\u5BA2\u4ED3\u5E93\u8DEF\u5F84\uFF0C\u4F8B\u5982 E:\\FireFly\u3002",
   errFullVaultLayout: (path) => `\u540C\u6B65\u6574\u4E2A Vault \u8981\u6C42\u76EE\u5F55\u4E3A <\u5DE5\u4F5C\u533A>\\firefly\\firefly\uFF0C\u4F8B\u5982 E:\\\u6587\u6863\\firefly\\firefly\u3002\u5F53\u524D Vault\uFF1A${path}`,
-  errMissingObsidianDir: (path) => `Vault \u6839\u76EE\u5F55\u7F3A\u5C11 .obsidian\uFF1A${path}`,
+  errMissingObsidianDir: (path) => `Vault \u6839\u76EE\u5F55\u7F3A\u5C11\u914D\u7F6E\u76EE\u5F55\uFF1A${path}`,
   errNoFilesToCommit: "\u6CA1\u6709\u53EF\u63D0\u4EA4\u7684\u6587\u4EF6\u3002",
   msgNoGitChanges: "\u6CA1\u6709\u68C0\u6D4B\u5230\u65B0\u7684 Git \u4FEE\u6539\uFF0C\u672A\u521B\u5EFA\u63D0\u4EA4\u3002",
   msgCommittedAndPushed: (count, remote, branchLabel, proxyLabel) => `\u5DF2\u63D0\u4EA4 ${count} \u4E2A\u6587\u4EF6\u5E76\u63A8\u9001\u5230 ${remote}${branchLabel}${proxyLabel}\u3002`,
   proxyLabel: (proxy) => `\uFF08\u7ECF\u4EE3\u7406 ${proxy}\uFF09`,
-  // Git Status Labels
   statusAdded: "\u65B0\u589E",
   statusModified: "\u4FEE\u6539",
   statusUntracked: "\u672A\u8DDF\u8E2A",
@@ -155,7 +147,6 @@ var zh = {
   statusConflicted: "\u51B2\u7A81",
   statusUnchanged: "\u65E0\u53D8\u5316",
   statusPending: "\u5F85\u6BD4\u8F83",
-  // Sidebar View
   viewTitle: "FireFly Sync",
   refreshAriaLabel: "\u5237\u65B0 Git \u72B6\u6001",
   settingsAriaLabel: "\u6253\u5F00 FireFly Sync \u8BBE\u7F6E",
@@ -167,7 +158,6 @@ var zh = {
   btnOpenSelector: "\u6253\u5F00\u540C\u6B65\u9009\u62E9\u5668",
   sidebarEmptyNoRepo: "\u914D\u7F6E\u535A\u5BA2\u4ED3\u5E93\u540E\uFF0C\u8FD9\u91CC\u4F1A\u663E\u793A Git \u5DE5\u4F5C\u533A\u4FEE\u6539\u3002",
   sidebarEmptyClean: "\u535A\u5BA2 Git \u5DE5\u4F5C\u533A\u6CA1\u6709\u4FEE\u6539\u3002",
-  // Settings Tab
   settingsTitle: "FireFly Sync",
   settingsHeaderDesc: "\u914D\u7F6E\u672C\u5730 FireFly \u535A\u5BA2 Git \u4ED3\u5E93\u53CA\u6587\u7AE0\u3001\u9644\u4EF6\u5B58\u653E\u8DEF\u5F84\u3002",
   settingRepoPathName: "\u535A\u5BA2\u4ED3\u5E93\u8DEF\u5F84",
@@ -185,13 +175,15 @@ var zh = {
   settingBranchName: "\u63A8\u9001\u5206\u652F",
   settingBranchDesc: "\u7559\u7A7A\u65F6\u4F7F\u7528\u5F53\u524D\u68C0\u51FA\u7684\u5206\u652F\u3002",
   settingCommitMsgName: "\u63D0\u4EA4\u4FE1\u606F",
-  defaultCommitMsg: "\u540C\u6B65 Obsidian \u6587\u7AE0\u5230 FireFly",
+  defaultCommitMsg: "\u540C\u6B65\u6587\u7AE0\u5230 FireFly",
   settingProxyName: "\u7F51\u7EDC\u4EE3\u7406",
   settingProxyDesc: "\u53EF\u9009\u3002\u7528\u4E8E\u535A\u5BA2 Git \u63A8\u9001\uFF0C\u652F\u6301 http://, https://, socks4://, socks5://\uFF08\u4F8B\u5982 socks5://127.0.0.1:7897 \u6216 http://127.0.0.1:7890\uFF09\u3002\u7559\u7A7A\u5219\u76F4\u8FDE\u3002",
   settingIgnoredFoldersName: "Vault \u5FFD\u7565\u76EE\u5F55",
-  settingIgnoredFoldersDesc: "\u6574\u4E2A Vault \u6A21\u5F0F\u4E0D\u4F1A\u540C\u6B65\u8FD9\u4E9B\u76EE\u5F55\uFF0C\u9017\u53F7\u5206\u9694\u3002\u9ED8\u8BA4\u5FFD\u7565 .obsidian\u3002",
+  settingIgnoredFoldersDesc: "\u6574\u4E2A Vault \u6A21\u5F0F\u4E0D\u4F1A\u540C\u6B65\u8FD9\u4E9B\u76EE\u5F55\uFF0C\u9017\u53F7\u5206\u9694\u3002\u9ED8\u8BA4\u5FFD\u7565\u5F53\u524D\u914D\u7F6E\u76EE\u5F55\u3002",
   dialogSelectDirectory: "\u8BF7\u9009\u62E9\u6587\u4EF6\u5939",
-  // Modals
+  settingContributeI18nName: "\u8D21\u732E\u7FFB\u8BD1",
+  settingContributeI18nDesc: "\u5E2E\u52A9\u6211\u4EEC\u5C06 FireFly Sync \u7FFB\u8BD1\u4E3A\u66F4\u591A\u8BED\u8A00\uFF0C\u6216\u6539\u8FDB\u73B0\u6709\u8BCD\u6761\u3002",
+  btnContributeI18n: "\u524D\u5F80 GitHub \u8D21\u732E",
   modalSelectTitle: "\u9009\u62E9\u540C\u6B65\u5185\u5BB9",
   modalSelectNote: "\u4EE5 Obsidian \u6587\u4EF6\u6D4F\u89C8\u5668\u7684\u76EE\u5F55\u6811\u9009\u62E9\u6587\u7AE0\u3002\u786E\u8BA4\u540E\u4F1A\u5148\u663E\u793A\u76EE\u6807\u535A\u5BA2\u7684 Git \u4FEE\u6539\u548C\u5DEE\u5F02\u3002",
   modalSyncScopeName: "\u540C\u6B65\u8303\u56F4",
@@ -208,31 +200,208 @@ var zh = {
   selectionCount: (count, isCurrent) => `${count} \u7BC7\u6587\u7AE0\u5DF2\u9009\u62E9${isCurrent ? "\uFF08\u9ED8\u8BA4\u5F53\u524D\u6587\u7AE0\uFF09" : ""}`,
   noticeSelectAtLeastOne: "\u8BF7\u81F3\u5C11\u9009\u62E9\u4E00\u7BC7\u6587\u7AE0\u3002",
   noticeDiffError: (err) => `\u8BFB\u53D6\u5DEE\u5F02\u5931\u8D25\uFF1A${err}`,
-  // Diff Modal
   modalDiffTitle: "\u67E5\u770B Git \u4FEE\u6539\u4E0E\u5DEE\u5F02",
   modalDiffNote: "\u8FD9\u91CC\u663E\u793A\u590D\u5236\u5230 FireFly \u535A\u5BA2\u540E\u5C06\u4EA7\u751F\u7684 Git diff\u3002\u5DE6\u4FA7\u53EF\u53D6\u6D88\u52FE\u9009\u4E0D\u9700\u8981\u540C\u6B65\u7684\u6587\u4EF6\u3002",
   btnBack: "\u8FD4\u56DE",
   btnSyncAndPush: "\u540C\u6B65\u5E76\u63A8\u9001",
   noticeKeepAtLeastOne: "\u8BF7\u81F3\u5C11\u4FDD\u7559\u4E00\u4E2A\u9700\u8981\u540C\u6B65\u7684\u6587\u4EF6\u3002",
   diffNoChange: "\u6CA1\u6709\u5DEE\u5F02\u3002\u540C\u6B65\u6B64\u6587\u4EF6\u4E0D\u4F1A\u6539\u53D8\u76EE\u6807\u535A\u5BA2\u4E2D\u7684\u5185\u5BB9\u3002",
-  // Status Modal
   statusModalTitle: (path) => `Git \u4FEE\u6539 \xB7 ${path}`,
   statusModalEmpty: "\u5F53\u524D\u6CA1\u6709\u53EF\u663E\u793A\u7684\u5DEE\u5F02\u3002"
 };
-function t() {
-  let lang = "en";
+var zhTW = {
+  ...zh,
+  cmdOpenSyncPanel: "\u958B\u555F\u540C\u6B65\u9762\u677F",
+  cmdSyncCurrentNote: "\u540C\u6B65\u7576\u524D\u6587\u7AE0",
+  cmdSyncFullVault: "\u540C\u6B65\u6574\u500B FireFly Vault",
+  ribbonTitle: "\u958B\u555F FireFly Sync",
+  noticeCannotOpenRightLeaf: "\u7121\u6CD5\u958B\u555F\u53F3\u5074 FireFly Sync \u9762\u677F\u3002",
+  noticeReadGitStatusFailed: (err) => `\u8B80\u53D6\u90E8\u843D\u683C Git \u72C0\u614B\u5931\u6557\uFF1A${err}`,
+  noticeOpenSelectorFailed: (err) => `\u7121\u6CD5\u958B\u555F\u540C\u6B65\u9078\u64C7\u5668\uFF1A${err}`,
+  noticeSyncFailed: (err) => `\u540C\u6B65\u5931\u6557\uFF1A${err}`,
+  errDetachedHead: "\u7576\u524D\u90E8\u843D\u683C\u5009\u5EAB\u8655\u65BC detached HEAD \u72C0\u614B\uFF0C\u8ACB\u5728\u8A2D\u5B9A\u4E2D\u6307\u5B9A\u8981\u63A8\u9001\u7684\u5206\u652F\u3002",
+  errNoteNotFound: (path) => `\u9078\u64C7\u7684\u6587\u7AE0\u4E0D\u5B58\u5728\uFF1A${path}`,
+  errNoteIgnored: (path) => `\u8A72\u6A94\u6848\u4F4D\u65BC\u5FFD\u7565\u76EE\u9304\uFF0C\u4E0D\u80FD\u540C\u6B65\uFF1A${path}`,
+  errConfigRepoFirst: "\u8ACB\u5148\u5728\u5916\u639B\u7A0B\u5F0F\u8A2D\u5B9A\u4E2D\u586B\u5BEB FireFly \u90E8\u843D\u683C\u5009\u5EAB\u8DEF\u5F91\uFF0C\u4F8B\u5982 E:\\FireFly\u3002",
+  errFullVaultLayout: (path) => `\u540C\u6B65\u6574\u500B Vault \u8981\u6C42\u76EE\u9304\u70BA <\u5DE5\u4F5C\u5340>\\firefly\\firefly\u3002\u7576\u524D Vault\uFF1A${path}`,
+  errMissingObsidianDir: (path) => `Vault \u6839\u76EE\u9304\u7F3A\u5C11\u914D\u7F6E\u76EE\u9304\uFF1A${path}`,
+  errNoFilesToCommit: "\u6C92\u6709\u53EF\u63D0\u4EA4\u7684\u6A94\u6848\u3002",
+  msgNoGitChanges: "\u6C92\u6709\u6AA2\u6E2C\u5230\u65B0\u7684 Git \u4FEE\u6539\uFF0C\u672A\u5EFA\u7ACB\u63D0\u4EA4\u3002",
+  msgCommittedAndPushed: (count, remote, branchLabel, proxyLabel) => `\u5DF2\u63D0\u4EA4 ${count} \u500B\u6A94\u6848\u4E26\u63A8\u9001\u5230 ${remote}${branchLabel}${proxyLabel}\u3002`,
+  proxyLabel: (proxy) => `\uFF08\u7D93\u4EE3\u7406 ${proxy}\uFF09`,
+  statusAdded: "\u65B0\u589E",
+  statusModified: "\u4FEE\u6539",
+  statusUntracked: "\u672A\u8FFD\u8E64",
+  statusDeleted: "\u522A\u9664",
+  statusRenamed: "\u91CD\u547D\u540D",
+  statusConflicted: "\u885D\u7A81",
+  statusUnchanged: "\u7121\u8B8A\u5316",
+  statusPending: "\u5F85\u6BD4\u8F03",
+  viewTitle: "FireFly Sync",
+  refreshAriaLabel: "\u91CD\u65B0\u6574\u7406 Git \u72C0\u614B",
+  settingsAriaLabel: "\u958B\u555F FireFly Sync \u8A2D\u5B9A",
+  repoPlaceholder: "\u8ACB\u5728\u8A2D\u5B9A\u4E2D\u914D\u7F6E\u90E8\u843D\u683C\u5009\u5EAB\u8DEF\u5F91",
+  btnSyncCurrent: "\u540C\u6B65\u7576\u524D\u6587\u7AE0",
+  btnSyncVault: "\u540C\u6B65\u6574\u500B Vault",
+  headingBlogGitChanges: "\u90E8\u843D\u683C Git \u4FEE\u6539",
+  sidebarTooltip: "\u9078\u64C7\u6587\u7AE0\u5F8C\u6703\u5148\u9810\u89BD\u76EE\u6A19\u90E8\u843D\u683C\u7684 Git diff\uFF1B\u78BA\u8A8D\u5F8C\u53EA\u8907\u88FD\u4E26\u63D0\u4EA4\u52FE\u9078\u7684\u6A94\u6848\u3002",
+  btnOpenSelector: "\u958B\u555F\u540C\u6B65\u9078\u64C7\u5668",
+  sidebarEmptyNoRepo: "\u914D\u7F6E\u90E8\u843D\u683C\u5009\u5EAB\u5F8C\uFF0C\u9019\u88E1\u6703\u986F\u793A Git \u5DE5\u4F5C\u5340\u4FEE\u6539\u3002",
+  sidebarEmptyClean: "\u90E8\u843D\u683C Git \u5DE5\u4F5C\u5340\u6C92\u6709\u4FEE\u6539\u3002",
+  settingsTitle: "FireFly Sync",
+  settingsHeaderDesc: "\u914D\u7F6E\u672C\u5730 FireFly \u90E8\u843D\u683C Git \u5009\u5EAB\u53CA\u6587\u7AE0\u3001\u9644\u4EF6\u5B58\u653E\u8DEF\u5F91\u3002",
+  settingRepoPathName: "\u90E8\u843D\u683C\u5009\u5EAB\u8DEF\u5F91",
+  settingRepoPathDesc: "\u4F8B\u5982 E:\\FireFly\u3002\u5FC5\u9808\u662F\u5DF2\u7D93\u521D\u59CB\u5316\u7684 Git \u5009\u5EAB\u3002",
+  btnBrowse: "\u700F\u89BD...",
+  tooltipBrowseRepo: "\u9078\u64C7\u90E8\u843D\u683C\u5009\u5EAB\u6839\u76EE\u9304",
+  settingPostsPathName: "\u90E8\u843D\u683C\u6587\u7AE0\u5B58\u653E\u76EE\u9304",
+  settingPostsPathDesc: "\u76F8\u5C0D\u65BC\u90E8\u843D\u683C\u5009\u5EAB\u7684\u76F8\u5C0D\u8DEF\u5F91\uFF0C\u9810\u8A2D src/content/posts\u3002\u4E5F\u53EF\u4EE5\u9EDE\u64CA\u700F\u89BD\u9078\u64C7\u3002",
+  tooltipBrowsePosts: "\u9078\u64C7\u90E8\u843D\u683C\u6587\u7AE0\u5B58\u653E\u76EE\u9304",
+  settingImagesPathName: "\u90E8\u843D\u683C\u9644\u4EF6/\u5716\u7247\u5B58\u653E\u76EE\u9304",
+  settingImagesPathDesc: "\u76F8\u5C0D\u65BC\u90E8\u843D\u683C\u5009\u5EAB\u7684\u76F8\u5C0D\u8DEF\u5F91\uFF0C\u9810\u8A2D src/content/posts/images\u3002\u4E5F\u53EF\u4EE5\u9EDE\u64CA\u700F\u89BD\u9078\u64C7\u3002",
+  tooltipBrowseImages: "\u9078\u64C7\u90E8\u843D\u683C\u9644\u4EF6/\u5716\u7247\u5B58\u653E\u76EE\u9304",
+  settingRemoteName: "Git \u9060\u7AEF",
+  settingRemoteDesc: "\u9810\u8A2D origin\u3002",
+  settingBranchName: "\u63A8\u9001\u5206\u652F",
+  settingBranchDesc: "\u7559\u7A7A\u6642\u4F7F\u7528\u7576\u524D\u6AA2\u51FA\u7684\u5206\u652F\u3002",
+  settingCommitMsgName: "\u63D0\u4EA4\u8A0A\u606F",
+  defaultCommitMsg: "\u540C\u6B65\u6587\u7AE0\u5230 FireFly",
+  settingProxyName: "\u7DB2\u8DEF\u4EE3\u7406",
+  settingProxyDesc: "\u53EF\u9078\u3002\u7528\u65BC\u90E8\u843D\u683C Git \u63A8\u9001\uFF0C\u652F\u63F4 http://, https://, socks4://, socks5://\u3002\u7559\u7A7A\u5247\u76F4\u9023\u3002",
+  settingIgnoredFoldersName: "Vault \u5FFD\u7565\u76EE\u9304",
+  settingIgnoredFoldersDesc: "\u6574\u500B Vault \u6A21\u5F0F\u4E0D\u6703\u540C\u6B65\u9019\u4E9B\u76EE\u9304\uFF0C\u9017\u865F\u5206\u9694\u3002\u9810\u8A2D\u5FFD\u7565\u7576\u524D\u914D\u7F6E\u76EE\u9304\u3002",
+  dialogSelectDirectory: "\u8ACB\u9078\u64C7\u8CC7\u6599\u593E",
+  settingContributeI18nName: "\u8CA2\u737B\u7FFB\u8B6F",
+  settingContributeI18nDesc: "\u5354\u52A9\u6211\u5011\u5C07 FireFly Sync \u7FFB\u8B6F\u70BA\u66F4\u591A\u8A9E\u8A00\uFF0C\u6216\u6539\u9032\u73FE\u6709\u8A5E\u689D\u3002",
+  btnContributeI18n: "\u524D\u5F80 GitHub \u8CA2\u737B",
+  modalSelectTitle: "\u9078\u64C7\u540C\u6B65\u5167\u5BB9",
+  modalSelectNote: "\u4EE5 Obsidian \u6A94\u6848\u700F\u89BD\u5668\u7684\u76EE\u9304\u6A39\u9078\u64C7\u6587\u7AE0\u3002\u78BA\u8A8D\u5F8C\u6703\u5148\u986F\u793A\u76EE\u6A19\u90E8\u843D\u683C\u7684 Git \u4FEE\u6539\u548C\u5DEE\u7570\u3002",
+  modalSyncScopeName: "\u540C\u6B65\u7BC4\u570D",
+  modalSyncScopeDesc: "\u7576\u524D\u6587\u7AE0\u9810\u8A2D\u53EA\u9078\u4E2D\u7576\u524D\u958B\u555F\u7684 Markdown\uFF1B\u6574\u500B Vault \u6703\u6309\u76EE\u9304\u6A39\u52FE\u9078\u6240\u6709\u53EF\u540C\u6B65 Markdown\u3002",
+  scopeCurrent: "\u7576\u524D\u6587\u7AE0",
+  scopeVault: "\u6574\u500B Vault",
+  modalFilterName: "\u7BE9\u9078\u6587\u7AE0",
+  modalFilterPlaceholder: "\u641C\u5C0B\u6A94\u6848\u6216\u76EE\u9304...",
+  btnSelectAll: "\u5168\u9078",
+  btnClear: "\u6E05\u7A7A",
+  btnCancel: "\u53D6\u6D88",
+  btnReviewDiff: "\u6AA2\u8996\u9078\u4E2D\u5DEE\u7570",
+  treeEmpty: "\u6C92\u6709\u7B26\u5408\u689D\u4EF6\u7684 Markdown \u6587\u7AE0\u3002",
+  selectionCount: (count, isCurrent) => `${count} \u7BC7\u6587\u7AE0\u5DF2\u9078\u64C7${isCurrent ? "\uFF08\u9810\u8A2D\u7576\u524D\u6587\u7AE0\uFF09" : ""}`,
+  noticeSelectAtLeastOne: "\u8ACB\u81F3\u5C11\u9078\u64C7\u4E00\u7BC7\u6587\u7AE0\u3002",
+  noticeDiffError: (err) => `\u8B80\u53D6\u5DEE\u7570\u5931\u6557\uFF1A${err}`,
+  modalDiffTitle: "\u6AA2\u8996 Git \u4FEE\u6539\u8207\u5DEE\u7570",
+  modalDiffNote: "\u9019\u88E1\u986F\u793A\u8907\u88FD\u5230 FireFly \u90E8\u843D\u683C\u5F8C\u5C07\u7522\u751F\u7684 Git diff\u3002\u5DE6\u5074\u53EF\u53D6\u6D88\u52FE\u9078\u4E0D\u9700\u8981\u540C\u6B65\u7684\u6A94\u6848\u3002",
+  btnBack: "\u8FD4\u56DE",
+  btnSyncAndPush: "\u540C\u6B65\u4E26\u63A8\u9001",
+  noticeKeepAtLeastOne: "\u8ACB\u81F3\u5C11\u4FDD\u7559\u4E00\u500B\u9700\u8981\u540C\u6B65\u7684\u6A94\u6848\u3002",
+  diffNoChange: "\u6C92\u6709\u5DEE\u7570\u3002\u540C\u6B65\u6B64\u6A94\u6848\u4E0D\u6703\u6539\u8B8A\u76EE\u6A19\u90E8\u843D\u683C\u4E2D\u7684\u5167\u5BB9\u3002",
+  statusModalTitle: (path) => `Git \u4FEE\u6539 \xB7 ${path}`,
+  statusModalEmpty: "\u7576\u524D\u6C92\u6709\u53EF\u986F\u793A\u7684\u5DEE\u7570\u3002"
+};
+var ja = {
+  ...en,
+  cmdOpenSyncPanel: "\u540C\u671F\u30D1\u30CD\u30EB\u3092\u958B\u304F",
+  cmdSyncCurrentNote: "\u73FE\u5728\u306E\u30CE\u30FC\u30C8\u3092\u540C\u671F",
+  cmdSyncFullVault: "FireFly Vault\u5168\u4F53\u3092\u540C\u671F",
+  ribbonTitle: "FireFly Sync \u3092\u958B\u304F",
+  noticeCannotOpenRightLeaf: "FireFly Sync \u30B5\u30A4\u30C9\u30D1\u30CD\u30EB\u3092\u958B\u3051\u307E\u305B\u3093\u3002",
+  noticeReadGitStatusFailed: (err) => `\u30D6\u30ED\u30B0\u306E Git \u72B6\u614B\u53D6\u5F97\u306B\u5931\u6557\u3057\u307E\u3057\u305F: ${err}`,
+  noticeOpenSelectorFailed: (err) => `\u540C\u671F\u30BB\u30EC\u30AF\u30BF\u30FC\u3092\u958B\u3051\u307E\u305B\u3093: ${err}`,
+  noticeSyncFailed: (err) => `\u540C\u671F\u306B\u5931\u6557\u3057\u307E\u3057\u305F: ${err}`,
+  errDetachedHead: "\u30D6\u30ED\u30B0\u30EA\u30DD\u30B8\u30C8\u30EA\u304C detached HEAD \u72B6\u614B\u3067\u3059\u3002\u8A2D\u5B9A\u3067\u30D6\u30E9\u30F3\u30C1\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+  errNoteNotFound: (path) => `\u9078\u629E\u3057\u305F\u30CE\u30FC\u30C8\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093: ${path}`,
+  errNoteIgnored: (path) => `\u3053\u306E\u30D5\u30A1\u30A4\u30EB\u306F\u9664\u5916\u5BFE\u8C61\u3067\u3059: ${path}`,
+  errConfigRepoFirst: "\u30D7\u30E9\u30B0\u30A4\u30F3\u8A2D\u5B9A\u3067\u30D6\u30ED\u30B0\u30EA\u30DD\u30B8\u30C8\u30EA\u306E\u30D1\u30B9\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044\uFF08\u4F8B: E:\\FireFly\uFF09\u3002",
+  errNoFilesToCommit: "\u30B3\u30DF\u30C3\u30C8\u3059\u308B\u30D5\u30A1\u30A4\u30EB\u304C\u3042\u308A\u307E\u305B\u3093\u3002",
+  msgNoGitChanges: "\u65B0\u3057\u3044\u5909\u66F4\u306F\u691C\u51FA\u3055\u308C\u307E\u305B\u3093\u3067\u3057\u305F\u3002",
+  msgCommittedAndPushed: (count, remote, branchLabel, proxyLabel) => `${count} \u4EF6\u306E\u30D5\u30A1\u30A4\u30EB\u3092\u30B3\u30DF\u30C3\u30C8\u3057\u3001${remote}${branchLabel}${proxyLabel} \u306B\u30D7\u30C3\u30B7\u30E5\u3057\u307E\u3057\u305F\u3002`,
+  proxyLabel: (proxy) => `\uFF08\u30D7\u30ED\u30AD\u30B7\u7D4C\u7531: ${proxy}\uFF09`,
+  statusAdded: "\u8FFD\u52A0",
+  statusModified: "\u5909\u66F4",
+  statusUntracked: "\u672A\u8FFD\u8DE1",
+  statusDeleted: "\u524A\u9664",
+  statusRenamed: "\u540D\u524D\u5909\u66F4",
+  statusConflicted: "\u7AF6\u5408",
+  statusUnchanged: "\u5909\u66F4\u306A\u3057",
+  statusPending: "\u4FDD\u7559\u4E2D",
+  viewTitle: "FireFly Sync",
+  refreshAriaLabel: "Git \u72B6\u614B\u3092\u66F4\u65B0",
+  settingsAriaLabel: "FireFly Sync \u8A2D\u5B9A\u3092\u958B\u304F",
+  repoPlaceholder: "\u8A2D\u5B9A\u3067\u30D6\u30ED\u30B0\u30EA\u30DD\u30B8\u30C8\u30EA\u306E\u30D1\u30B9\u3092\u6307\u5B9A\u3057\u3066\u304F\u3060\u3055\u3044",
+  btnSyncCurrent: "\u73FE\u5728\u306E\u30CE\u30FC\u30C8\u3092\u540C\u671F",
+  btnSyncVault: "Vault\u5168\u4F53\u3092\u540C\u671F",
+  headingBlogGitChanges: "\u30D6\u30ED\u30B0\u306E Git \u5909\u66F4\u4E00\u89A7",
+  sidebarTooltip: "\u8A18\u4E8B\u3092\u9078\u629E\u3057\u3066 Git \u5DEE\u5206\u3092\u78BA\u8A8D\u3057\u307E\u3059\u3002\u78BA\u8A8D\u3055\u308C\u305F\u30D5\u30A1\u30A4\u30EB\u306E\u307F\u30B3\u30DF\u30C3\u30C8\u3055\u308C\u307E\u3059\u3002",
+  btnOpenSelector: "\u540C\u671F\u30BB\u30EC\u30AF\u30BF\u30FC\u3092\u958B\u304F",
+  sidebarEmptyNoRepo: "\u30D6\u30ED\u30B0\u30EA\u30DD\u30B8\u30C8\u30EA\u8A2D\u5B9A\u5F8C\u306B\u5909\u66F4\u304C\u8868\u793A\u3055\u308C\u307E\u3059\u3002",
+  sidebarEmptyClean: "\u4F5C\u696D\u30C4\u30EA\u30FC\u306B\u5909\u66F4\u306F\u3042\u308A\u307E\u305B\u3093\u3002",
+  settingsTitle: "FireFly Sync",
+  settingsHeaderDesc: "\u30ED\u30FC\u30AB\u30EB FireFly \u30D6\u30ED\u30B0\u30EA\u30DD\u30B8\u30C8\u30EA\u3001\u8A18\u4E8B\u304A\u3088\u3073\u753B\u50CF\u914D\u7F6E\u30D1\u30B9\u3092\u8A2D\u5B9A\u3057\u307E\u3059\u3002",
+  settingRepoPathName: "\u30D6\u30ED\u30B0\u30EA\u30DD\u30B8\u30C8\u30EA\u306E\u30D1\u30B9",
+  btnBrowse: "\u53C2\u7167...",
+  tooltipBrowseRepo: "\u30EA\u30DD\u30B8\u30C8\u30EA\u306E\u30EB\u30FC\u30C8\u30D5\u30A9\u30EB\u30C0\u3092\u9078\u629E",
+  settingPostsPathName: "\u8A18\u4E8B\u914D\u7F6E\u30D5\u30A9\u30EB\u30C0",
+  tooltipBrowsePosts: "\u8A18\u4E8B\u30D5\u30A9\u30EB\u30C0\u3092\u9078\u629E",
+  settingImagesPathName: "\u753B\u50CF/\u30E1\u30C7\u30A3\u30A2\u30D5\u30A9\u30EB\u30C0",
+  tooltipBrowseImages: "\u753B\u50CF\u30D5\u30A9\u30EB\u30C0\u3092\u9078\u629E",
+  settingRemoteName: "Git \u30EA\u30E2\u30FC\u30C8",
+  settingBranchName: "\u30D7\u30C3\u30B7\u30E5\u30D6\u30E9\u30F3\u30C1",
+  settingCommitMsgName: "\u30B3\u30DF\u30C3\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8",
+  defaultCommitMsg: "\u30CE\u30FC\u30C8\u3092 FireFly \u306B\u540C\u671F",
+  settingProxyName: "\u30CD\u30C3\u30C8\u30EF\u30FC\u30AF\u30D7\u30ED\u30AD\u30B7",
+  settingIgnoredFoldersName: "\u9664\u5916\u30D5\u30A9\u30EB\u30C0",
+  dialogSelectDirectory: "\u30D5\u30A9\u30EB\u30C0\u3092\u9078\u629E",
+  settingContributeI18nName: "\u7FFB\u8A33\u306B\u8CA2\u732E\u3059\u308B",
+  settingContributeI18nDesc: "GitHub \u3067 FireFly Sync \u306E\u7FFB\u8A33\u3092\u6539\u5584\u30FB\u8FFD\u52A0\u3057\u3066\u30ED\u30FC\u30AB\u30E9\u30A4\u30BA\u306B\u3054\u5354\u529B\u304F\u3060\u3055\u3044\u3002",
+  btnContributeI18n: "GitHub \u3067\u8CA2\u732E\u3059\u308B",
+  modalSelectTitle: "\u540C\u671F\u3059\u308B\u30CE\u30FC\u30C8\u3092\u9078\u629E",
+  modalSelectNote: "\u30C4\u30EA\u30FC\u304B\u3089\u540C\u671F\u3059\u308B\u30CE\u30FC\u30C8\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u30D7\u30C3\u30B7\u30E5\u524D\u306B Git \u5DEE\u5206\u304C\u8868\u793A\u3055\u308C\u307E\u3059\u3002",
+  modalSyncScopeName: "\u540C\u671F\u7BC4\u56F2",
+  scopeCurrent: "\u73FE\u5728\u306E\u30CE\u30FC\u30C8",
+  scopeVault: "Vault\u5168\u4F53",
+  modalFilterName: "\u30CE\u30FC\u30C8\u3092\u7D5E\u308A\u8FBC\u307F",
+  modalFilterPlaceholder: "\u30D5\u30A1\u30A4\u30EB\u3084\u30D5\u30A9\u30EB\u30C0\u3092\u691C\u7D22...",
+  btnSelectAll: "\u3059\u3079\u3066\u9078\u629E",
+  btnClear: "\u30AF\u30EA\u30A2",
+  btnCancel: "\u30AD\u30E3\u30F3\u30BB\u30EB",
+  btnReviewDiff: "\u5DEE\u5206\u3092\u78BA\u8A8D",
+  treeEmpty: "\u8A72\u5F53\u3059\u308B\u30DE\u30FC\u30AF\u30C0\u30A6\u30F3\u30CE\u30FC\u30C8\u304C\u3042\u308A\u307E\u305B\u3093\u3002",
+  selectionCount: (count, isCurrent) => `${count} \u4EF6\u306E\u30CE\u30FC\u30C8\u3092\u9078\u629E\u4E2D${isCurrent ? "\uFF08\u73FE\u5728\u306E\u30CE\u30FC\u30C8\uFF09" : ""}`,
+  noticeSelectAtLeastOne: "\u5C11\u306A\u304F\u3068\u30821\u3064\u306E\u30CE\u30FC\u30C8\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+  noticeDiffError: (err) => `\u5DEE\u5206\u306E\u751F\u6210\u306B\u5931\u6557\u3057\u307E\u3057\u305F: ${err}`,
+  modalDiffTitle: "Git \u5DEE\u5206\u306E\u78BA\u8A8D",
+  modalDiffNote: "\u30D6\u30ED\u30B0\u306B\u30D7\u30C3\u30B7\u30E5\u3055\u308C\u308B\u5909\u66F4\u5185\u5BB9\u3067\u3059\u3002\u9664\u5916\u3057\u305F\u3044\u30D5\u30A1\u30A4\u30EB\u306E\u30C1\u30A7\u30C3\u30AF\u3092\u5916\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+  btnBack: "\u623B\u308B",
+  btnSyncAndPush: "\u540C\u671F\u3057\u3066\u30D7\u30C3\u30B7\u30E5",
+  noticeKeepAtLeastOne: "\u5C11\u306A\u304F\u3068\u30821\u3064\u306E\u30D5\u30A1\u30A4\u30EB\u3092\u9078\u629E\u3057\u3066\u304F\u3060\u3055\u3044\u3002",
+  diffNoChange: "\u5DEE\u5206\u306F\u3042\u308A\u307E\u305B\u3093\u3002",
+  statusModalTitle: (path) => `Git \u5909\u66F4 \xB7 ${path}`,
+  statusModalEmpty: "\u8868\u793A\u3067\u304D\u308B\u5DEE\u5206\u306F\u3042\u308A\u307E\u305B\u3093\u3002"
+};
+var translationsMap = {
+  en,
+  zh,
+  "zh-TW": zhTW,
+  "zh-CN": zh,
+  ja
+};
+function getAppLang() {
   try {
-    try {
-      const obs = typeof require === "function" ? require("obsidian") : {};
-      lang = (obs.getLanguage ? obs.getLanguage() : "en") || "en";
-    } catch {
-      lang = "en";
-    }
+    const obs = typeof require === "function" ? require("obsidian") : {};
+    return (obs.getLanguage ? obs.getLanguage() : "en") || "en";
   } catch {
-    lang = "en";
+    return "en";
   }
-  if (lang.startsWith("zh")) {
-    return zh;
+}
+function t() {
+  const lang = getAppLang();
+  if (translationsMap[lang]) {
+    return translationsMap[lang];
+  }
+  const prefix = lang.split("-")[0];
+  if (prefix && translationsMap[prefix]) {
+    return translationsMap[prefix];
   }
   return en;
 }
@@ -991,6 +1160,11 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
       })
     );
     const defaultIgnore = this.app.vault.configDir || ".obsidian";
+    new import_obsidian2.Setting(containerEl).setName(t().settingContributeI18nName).setDesc(t().settingContributeI18nDesc).addButton(
+      (button) => button.setButtonText(t().btnContributeI18n).setCta().onClick(() => {
+        window.open("https://github.com/Deanyu148/firefly_sync/issues/new?title=%5Bi18n%5D+Translation+Contribution&labels=enhancement,i18n", "_blank");
+      })
+    );
     new import_obsidian2.Setting(containerEl).setName(t().settingIgnoredFoldersName).setDesc(t().settingIgnoredFoldersDesc).addText(
       (text) => text.setValue(this.plugin.settings.ignoreFolders.join(", ")).onChange(async (value) => {
         this.plugin.settings.ignoreFolders = value.split(",").map((folder) => folder.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
@@ -1049,7 +1223,6 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
     });
     this.addRibbonIcon("git-pull-request", t().ribbonTitle, () => void this.activateView());
     this.registerView(VIEW_TYPE_FIREFLY_SYNC, (leaf) => new FireflySyncView(leaf, this));
-    this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.refreshView()));
   }
   onunload() {
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_FIREFLY_SYNC);
