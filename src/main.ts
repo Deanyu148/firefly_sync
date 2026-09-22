@@ -66,7 +66,7 @@ export default class FireflySyncPlugin extends Plugin {
 
 	async loadSettings(): Promise<void> {
 		const loaded = (await this.loadData()) as Partial<FireflySyncSettings> | null;
-		const cfgDir = this.app.vault.configDir || ".obsidian";
+		const cfgDir = this.app.vault.configDir;
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, { ignoreFolders: [cfgDir] }, loaded ?? {});
 		if (!this.settings.ignoreFolders || this.settings.ignoreFolders.length === 0) {
 			this.settings.ignoreFolders = [cfgDir];
@@ -306,7 +306,7 @@ export default class FireflySyncPlugin extends Plugin {
 			throw new Error(t().errFullVaultLayout(vaultPath));
 		}
 		try {
-			const cfgDir = this.app.vault.configDir || ".obsidian";
+			const cfgDir = this.app.vault.configDir;
 			if (!(await stat(join(vaultPath, cfgDir))).isDirectory()) throw new Error("not a directory");
 		} catch {
 			throw new Error(t().errMissingObsidianDir(vaultPath));
@@ -315,8 +315,7 @@ export default class FireflySyncPlugin extends Plugin {
 
 	private isIgnored(path: string): boolean {
 		const normalized = path.replaceAll("\\", "/");
-		const cfgDir = this.app.vault.configDir || ".obsidian";
-		const dynamicIgnores = this.settings.ignoreFolders.map((f) => f === ".obsidian" ? cfgDir : f);
+		const dynamicIgnores = this.settings.ignoreFolders;
 		return dynamicIgnores.some((folder) => {
 			const cleaned = folder.trim().replaceAll("\\", "/").replace(/^\/+|\/+$/g, "");
 			return cleaned.length > 0 && (normalized === cleaned || normalized.startsWith(`${cleaned}/`));
