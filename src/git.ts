@@ -1,6 +1,7 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { dirname, relative, resolve, sep } from "node:path";
+import { copyFile, mkdir, readFile } from "fs/promises";
+import { execFile } from "child_process";
+import { promisify } from "util";
+import { dirname, relative, resolve, sep } from "path";
 
 const execFileAsync = promisify(execFile);
 
@@ -127,7 +128,6 @@ async function getPathStatus(repositoryPath: string, path: string): Promise<GitF
 }
 
 async function getUntrackedDiff(repositoryPath: string, path: string): Promise<string> {
-	const { readFile } = await import("node:fs/promises");
 	const absolutePath = resolveRepositoryPath(repositoryPath, path);
 	try {
 		const content = await readFile(absolutePath);
@@ -146,7 +146,6 @@ export async function getSyncPreviews(repositoryPath: string, inputs: SyncPrevie
 }
 
 export async function getSyncPreview(repositoryPath: string, input: SyncPreviewInput): Promise<SyncPreview> {
-	const { readFile } = await import("node:fs/promises");
 	const targetAbsolutePath = resolveBlogPostPath(repositoryPath, input.targetRelativePath);
 	const source = await readFile(input.sourceAbsolutePath);
 	let target: Buffer | undefined;
@@ -251,7 +250,6 @@ export async function copyToBlog(
 	repositoryPath: string,
 	entries: Array<{ sourceAbsolutePath: string; targetRelativePath: string }>,
 ): Promise<void> {
-	const { copyFile, mkdir } = await import("node:fs/promises");
 	for (const entry of entries) {
 		const target = resolveBlogPostPath(repositoryPath, entry.targetRelativePath);
 		await mkdir(dirname(target), { recursive: true });

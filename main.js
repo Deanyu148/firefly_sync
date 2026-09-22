@@ -1,9 +1,7 @@
 "use strict";
-var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -17,14 +15,6 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // src/main.ts
@@ -35,14 +25,16 @@ __export(main_exports, {
   default: () => FireflySyncPlugin
 });
 module.exports = __toCommonJS(main_exports);
+var import_promises2 = require("fs/promises");
 var import_obsidian3 = require("obsidian");
-var import_node_path2 = require("node:path");
+var import_path2 = require("path");
 
 // src/git.ts
-var import_node_child_process = require("node:child_process");
-var import_node_util = require("node:util");
-var import_node_path = require("node:path");
-var execFileAsync = (0, import_node_util.promisify)(import_node_child_process.execFile);
+var import_promises = require("fs/promises");
+var import_child_process = require("child_process");
+var import_util = require("util");
+var import_path = require("path");
+var execFileAsync = (0, import_util.promisify)(import_child_process.execFile);
 async function runGit(repositoryPath, args) {
   const result = await execFileAsync("git", args, {
     cwd: repositoryPath,
@@ -131,10 +123,9 @@ async function getPathStatus(repositoryPath, path) {
   }
 }
 async function getUntrackedDiff(repositoryPath, path) {
-  const { readFile } = await import("node:fs/promises");
   const absolutePath = resolveRepositoryPath(repositoryPath, path);
   try {
-    const content = await readFile(absolutePath);
+    const content = await (0, import_promises.readFile)(absolutePath);
     if (isBinary(content)) return `Binary file ${path} is not shown.`;
     return formatNewFileDiff(path, content.toString("utf8"));
   } catch (error) {
@@ -148,12 +139,11 @@ async function getSyncPreviews(repositoryPath, inputs) {
   return previews;
 }
 async function getSyncPreview(repositoryPath, input) {
-  const { readFile } = await import("node:fs/promises");
   const targetAbsolutePath = resolveBlogPostPath(repositoryPath, input.targetRelativePath);
-  const source = await readFile(input.sourceAbsolutePath);
+  const source = await (0, import_promises.readFile)(input.sourceAbsolutePath);
   let target;
   try {
-    target = await readFile(targetAbsolutePath);
+    target = await (0, import_promises.readFile)(targetAbsolutePath);
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
@@ -209,29 +199,28 @@ function isBinary(content) {
   return content.subarray(0, Math.min(content.length, 8192)).includes(0);
 }
 function resolveRepositoryPath(repositoryPath, relativePath) {
-  const root = (0, import_node_path.resolve)(repositoryPath);
-  const target = (0, import_node_path.resolve)(root, relativePath.replaceAll("/", import_node_path.sep));
-  const relation = (0, import_node_path.relative)(root, target);
-  if (relation === ".." || relation.startsWith(`..${import_node_path.sep}`) || relation.includes(`${import_node_path.sep}..${import_node_path.sep}`)) {
+  const root = (0, import_path.resolve)(repositoryPath);
+  const target = (0, import_path.resolve)(root, relativePath.replaceAll("/", import_path.sep));
+  const relation = (0, import_path.relative)(root, target);
+  if (relation === ".." || relation.startsWith(`..${import_path.sep}`) || relation.includes(`${import_path.sep}..${import_path.sep}`)) {
     throw new Error(`\u62D2\u7EDD\u8BBF\u95EE\u535A\u5BA2\u4ED3\u5E93\u4E4B\u5916\u7684\u8DEF\u5F84\uFF1A${relativePath}`);
   }
   return target;
 }
 function resolveBlogPostPath(repositoryPath, relativePath) {
-  const postsRoot = (0, import_node_path.resolve)(repositoryPath, "src", "content", "posts");
+  const postsRoot = (0, import_path.resolve)(repositoryPath, "src", "content", "posts");
   const target = resolveRepositoryPath(repositoryPath, relativePath);
-  const relation = (0, import_node_path.relative)(postsRoot, target);
-  if (relation === "" || relation === ".." || relation.startsWith(`..${import_node_path.sep}`) || relation.includes(`${import_node_path.sep}..${import_node_path.sep}`)) {
+  const relation = (0, import_path.relative)(postsRoot, target);
+  if (relation === "" || relation === ".." || relation.startsWith(`..${import_path.sep}`) || relation.includes(`${import_path.sep}..${import_path.sep}`)) {
     throw new Error(`\u540C\u6B65\u76EE\u6807\u5FC5\u987B\u4F4D\u4E8E\u535A\u5BA2 src/content/posts \u5185\uFF1A${relativePath}`);
   }
   return target;
 }
 async function copyToBlog(repositoryPath, entries) {
-  const { copyFile, mkdir } = await import("node:fs/promises");
   for (const entry of entries) {
     const target = resolveBlogPostPath(repositoryPath, entry.targetRelativePath);
-    await mkdir((0, import_node_path.dirname)(target), { recursive: true });
-    await copyFile(entry.sourceAbsolutePath, target);
+    await (0, import_promises.mkdir)((0, import_path.dirname)(target), { recursive: true });
+    await (0, import_promises.copyFile)(entry.sourceAbsolutePath, target);
   }
 }
 async function commitAndPush(repositoryPath, relativePaths, commitMessage, remote, branch) {
@@ -780,7 +769,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       const targetRelativePath = ``;
       syncFiles.push({
         vaultPath: path,
-        sourceAbsolutePath: (0, import_node_path2.join)(vaultBasePath, ...file.path.split("/")),
+        sourceAbsolutePath: (0, import_path2.join)(vaultBasePath, ...file.path.split("/")),
         targetRelativePath
       });
       addedTargetPaths.add(targetRelativePath);
@@ -790,7 +779,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       for (const file of allFiles) {
         const normPath = file.path.replaceAll("\\", "/");
         if (normPath.startsWith("images/") || normPath === "images") {
-          if (IMAGE_EXTENSIONS.has((0, import_node_path2.extname)(file.path).toLowerCase()) || file.extension) {
+          if (IMAGE_EXTENSIONS.has((0, import_path2.extname)(file.path).toLowerCase()) || file.extension) {
             imageFilesToSync.push(file);
           }
         }
@@ -824,7 +813,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       if (!addedTargetPaths.has(targetRelativePath)) {
         syncFiles.push({
           vaultPath: imgFile.path,
-          sourceAbsolutePath: (0, import_node_path2.join)(vaultBasePath, ...imgFile.path.split("/")),
+          sourceAbsolutePath: (0, import_path2.join)(vaultBasePath, ...imgFile.path.split("/")),
           targetRelativePath
         });
         addedTargetPaths.add(targetRelativePath);
@@ -861,8 +850,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
     if (!configuredPath) throw new Error("\u8BF7\u5148\u5728\u63D2\u4EF6\u8BBE\u7F6E\u4E2D\u586B\u5199 FireFly \u535A\u5BA2\u4ED3\u5E93\u8DEF\u5F84\uFF0C\u4F8B\u5982 E:\\FireFly\u3002");
     await assertGitRepository(configuredPath);
     const repository = (await runGit(configuredPath, ["rev-parse", "--show-toplevel"])).trim();
-    const { access } = await import("node:fs/promises");
-    await access((0, import_node_path2.join)(repository, "src", "content", "posts"));
+    await (0, import_promises2.access)((0, import_path2.join)(repository, "src", "content", "posts"));
     return repository;
   }
   async assertFullVaultLayout() {
@@ -871,16 +859,15 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       throw new Error("\u540C\u6B65\u6574\u4E2A Vault \u4EC5\u652F\u6301\u684C\u9762\u7AEF\u7684\u672C\u5730\u6587\u4EF6\u7CFB\u7EDF Vault\u3002");
     }
     const vaultPath = adapter.getBasePath();
-    const folder = (0, import_node_path2.basename)(vaultPath).toLocaleLowerCase();
-    const parent = (0, import_node_path2.basename)((0, import_node_path2.dirname)(vaultPath)).toLocaleLowerCase();
+    const folder = (0, import_path2.basename)(vaultPath).toLocaleLowerCase();
+    const parent = (0, import_path2.basename)((0, import_path2.dirname)(vaultPath)).toLocaleLowerCase();
     if (folder !== "firefly" || parent !== "firefly") {
       throw new Error(
         `\u540C\u6B65\u6574\u4E2A Vault \u8981\u6C42\u76EE\u5F55\u4E3A <\u5DE5\u4F5C\u533A>\\firefly\\firefly\uFF0C\u4F8B\u5982 E:\\\u6587\u6863\\firefly\\firefly\u3002\u5F53\u524D Vault\uFF1A${vaultPath}`
       );
     }
-    const { stat } = await import("node:fs/promises");
     try {
-      if (!(await stat((0, import_node_path2.join)(vaultPath, ".obsidian"))).isDirectory()) throw new Error("not a directory");
+      if (!(await (0, import_promises2.stat)((0, import_path2.join)(vaultPath, ".obsidian"))).isDirectory()) throw new Error("not a directory");
     } catch {
       throw new Error(`Vault \u6839\u76EE\u5F55\u7F3A\u5C11 .obsidian\uFF1A${vaultPath}`);
     }

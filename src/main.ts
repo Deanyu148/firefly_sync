@@ -1,6 +1,7 @@
+import { access, stat } from "fs/promises";
 import { FileSystemAdapter, ItemView, Notice, Plugin, WorkspaceLeaf, setIcon } from "obsidian";
 import type { TFile } from "obsidian";
-import { basename, dirname, extname, join } from "node:path";
+import { basename, dirname, extname, join } from "path";
 import {
 	assertGitRepository,
 	commitAndPush,
@@ -272,7 +273,6 @@ export default class FireflySyncPlugin extends Plugin {
 		if (!configuredPath) throw new Error("请先在插件设置中填写 FireFly 博客仓库路径，例如 E:\\FireFly。");
 		await assertGitRepository(configuredPath);
 		const repository = (await runGit(configuredPath, ["rev-parse", "--show-toplevel"])).trim();
-		const { access } = await import("node:fs/promises");
 		await access(join(repository, "src", "content", "posts"));
 		return repository;
 	}
@@ -290,7 +290,6 @@ export default class FireflySyncPlugin extends Plugin {
 				`同步整个 Vault 要求目录为 <工作区>\\firefly\\firefly，例如 E:\\文档\\firefly\\firefly。当前 Vault：${vaultPath}`,
 			);
 		}
-		const { stat } = await import("node:fs/promises");
 		try {
 			if (!(await stat(join(vaultPath, ".obsidian"))).isDirectory()) throw new Error("not a directory");
 		} catch {
