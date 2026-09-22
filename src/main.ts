@@ -60,12 +60,13 @@ export default class FireflySyncPlugin extends Plugin {
 		this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.refreshView()));
 	}
 
-	async onunload(): Promise<void> {
-		await this.app.workspace.detachLeavesOfType(VIEW_TYPE_FIREFLY_SYNC);
+	onunload(): void {
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_FIREFLY_SYNC);
 	}
 
 	async loadSettings(): Promise<void> {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const loaded = (await this.loadData()) as Partial<FireflySyncSettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded ?? {});
 	}
 
 	async saveSettings(): Promise<void> {
@@ -83,7 +84,7 @@ export default class FireflySyncPlugin extends Plugin {
 			}
 			await leaf.setViewState({ type: VIEW_TYPE_FIREFLY_SYNC, active: true });
 		}
-		this.app.workspace.revealLeaf(leaf);
+		await this.app.workspace.revealLeaf(leaf);
 		await this.refreshGitStatus();
 	}
 
@@ -301,7 +302,8 @@ export default class FireflySyncPlugin extends Plugin {
 			throw new Error(t().errFullVaultLayout(vaultPath));
 		}
 		try {
-			if (!(await stat(join(vaultPath, ".obsidian"))).isDirectory()) throw new Error("not a directory");
+			const cfgDir = this.app.vault.configDir || ".obsidian";
+			if (!(await stat(join(vaultPath, cfgDir))).isDirectory()) throw new Error("not a directory");
 		} catch {
 			throw new Error(t().errMissingObsidianDir(vaultPath));
 		}

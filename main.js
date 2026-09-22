@@ -600,7 +600,7 @@ var SyncSelectionModal = class extends import_obsidian.Modal {
   }
   renderNode(parent, node, depth) {
     const row = parent.createDiv({ cls: "firefly-sync-tree-row" });
-    row.style.paddingLeft = `${depth * 16 + 4}px`;
+    row.setCssStyles({ paddingLeft: `${depth * 16 + 4}px` });
     const descendantPaths = this.getLeafPaths(node);
     const checkedCount = descendantPaths.filter((path) => this.selected.has(path)).length;
     const checked = descendantPaths.length > 0 && checkedCount === descendantPaths.length;
@@ -812,7 +812,8 @@ var DEFAULT_SETTINGS = {
 };
 async function pickDirectory(defaultPath) {
   try {
-    const electron = window.require?.("electron") ?? window.electron;
+    const win = window;
+    const electron = win.require ? win.require("electron") : win.electron;
     const dialog = electron?.remote?.dialog ?? electron?.dialog;
     if (dialog?.showOpenDialog) {
       const res = await dialog.showOpenDialog({
@@ -824,7 +825,8 @@ async function pickDirectory(defaultPath) {
       }
       return null;
     }
-  } catch {
+  } catch (error) {
+    console.debug("Electron folder dialog unavailable:", error);
   }
   if (process.platform === "win32") {
     try {
@@ -845,15 +847,20 @@ async function pickDirectory(defaultPath) {
       });
       const path = (result.stdout ?? "").trim().split(/\r?\n/).filter(Boolean).pop();
       return path || null;
-    } catch {
+    } catch (error) {
+      console.debug("PowerShell folder dialog error:", error);
     }
   }
   return new Promise((resolveResult) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.setAttribute("webkitdirectory", "true");
-    input.setAttribute("directory", "true");
-    input.style.display = "none";
+    const input = createEl("input", {
+      type: "file",
+      cls: "firefly-sync-hidden-input",
+      attr: {
+        webkitdirectory: "true",
+        directory: "true"
+      }
+    });
+    input.setCssStyles({ display: "none" });
     document.body.appendChild(input);
     let resolved = false;
     input.addEventListener("change", () => {
@@ -867,12 +874,11 @@ async function pickDirectory(defaultPath) {
       const fullPath = file?.path;
       document.body.removeChild(input);
       if (fullPath) {
-        const { dirname: dirname3 } = require("path");
         const relativePath = file.webkitRelativePath;
         const depth = relativePath.split("/").length - 1;
-        let current = dirname3(fullPath);
+        let current = (0, import_path2.dirname)(fullPath);
         for (let i = 0; i < depth - 1; i++) {
-          current = dirname3(current);
+          current = (0, import_path2.dirname)(current);
         }
         resolveResult(current);
       } else {
@@ -882,7 +888,7 @@ async function pickDirectory(defaultPath) {
     window.addEventListener(
       "focus",
       () => {
-        setTimeout(() => {
+        window.setTimeout(() => {
           if (!resolved) {
             if (document.body.contains(input)) document.body.removeChild(input);
             resolveResult(null);
@@ -902,11 +908,7 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: t().settingsTitle });
-    containerEl.createEl("p", {
-      text: t().settingsHeaderDesc,
-      cls: "firefly-sync-setting-note"
-    });
+    new import_obsidian2.Setting(containerEl).setName(t().settingsTitle).setDesc(t().settingsHeaderDesc).setHeading();
     let repoTextInput;
     new import_obsidian2.Setting(containerEl).setName(t().settingRepoPathName).setDesc(t().settingRepoPathDesc).addText((text) => {
       repoTextInput = text.inputEl;
@@ -988,9 +990,13 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         await this.plugin.saveSettings();
       })
     );
+    const defaultIgnore = this.app.vault.configDir || ".obsidian";
     new import_obsidian2.Setting(containerEl).setName(t().settingIgnoredFoldersName).setDesc(t().settingIgnoredFoldersDesc).addText(
       (text) => text.setValue(this.plugin.settings.ignoreFolders.join(", ")).onChange(async (value) => {
         this.plugin.settings.ignoreFolders = value.split(",").map((folder) => folder.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
+        if (this.plugin.settings.ignoreFolders.length === 0) {
+          this.plugin.settings.ignoreFolders = [defaultIgnore];
+        }
         await this.plugin.saveSettings();
       })
     );
@@ -1045,11 +1051,12 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
     this.registerView(VIEW_TYPE_FIREFLY_SYNC, (leaf) => new FireflySyncView(leaf, this));
     this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.refreshView()));
   }
-  async onunload() {
-    await this.app.workspace.detachLeavesOfType(VIEW_TYPE_FIREFLY_SYNC);
+  onunload() {
+    this.app.workspace.detachLeavesOfType(VIEW_TYPE_FIREFLY_SYNC);
   }
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    const loaded = await this.loadData();
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded ?? {});
   }
   async saveSettings() {
     await this.saveData(this.settings);
@@ -1065,7 +1072,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       }
       await leaf.setViewState({ type: VIEW_TYPE_FIREFLY_SYNC, active: true });
     }
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
     await this.refreshGitStatus();
   }
   async refreshView() {
@@ -1259,7 +1266,8 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       throw new Error(t().errFullVaultLayout(vaultPath));
     }
     try {
-      if (!(await (0, import_promises2.stat)((0, import_path3.join)(vaultPath, ".obsidian"))).isDirectory()) throw new Error("not a directory");
+      const cfgDir = this.app.vault.configDir || ".obsidian";
+      if (!(await (0, import_promises2.stat)((0, import_path3.join)(vaultPath, cfgDir))).isDirectory()) throw new Error("not a directory");
     } catch {
       throw new Error(t().errMissingObsidianDir(vaultPath));
     }

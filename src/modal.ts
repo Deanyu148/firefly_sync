@@ -158,7 +158,7 @@ export class SyncSelectionModal extends Modal {
 
 	private renderNode(parent: HTMLElement, node: SyncTreeNode, depth: number): void {
 		const row = parent.createDiv({ cls: "firefly-sync-tree-row" });
-		row.style.paddingLeft = `${depth * 16 + 4}px`;
+		row.setCssStyles({ paddingLeft: `${depth * 16 + 4}px` });
 		const descendantPaths = this.getLeafPaths(node);
 		const checkedCount = descendantPaths.filter((path) => this.selected.has(path)).length;
 		const checked = descendantPaths.length > 0 && checkedCount === descendantPaths.length;

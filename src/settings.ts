@@ -1,9 +1,9 @@
-import { t } from "./i18n";
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type FireflySyncPlugin from "./main";
 import { execFile } from "child_process";
 import { promisify } from "util";
-import { relative, resolve, sep } from "path";
+import { dirname, relative, resolve, sep } from "path";
+import { t } from "./i18n";
 
 const execFileAsync = promisify(execFile);
 
@@ -29,11 +29,28 @@ export const DEFAULT_SETTINGS: FireflySyncSettings = {
 	ignoreFolders: [".obsidian"],
 };
 
+interface ElectronDialogResult {
+	canceled: boolean;
+	filePaths?: string[];
+}
+
+interface ElectronDialogApi {
+	showOpenDialog?: (options: {
+		defaultPath?: string;
+		properties: string[];
+	}) => Promise<ElectronDialogResult>;
+}
+
+interface WindowWithElectron {
+	require?: (mod: string) => { dialog?: ElectronDialogApi; remote?: { dialog?: ElectronDialogApi } };
+	electron?: { dialog?: ElectronDialogApi; remote?: { dialog?: ElectronDialogApi } };
+}
+
 export async function pickDirectory(defaultPath?: string): Promise<string | null> {
-	// 1. Try electron dialog via Obsidian window.require
+	// 1. Try electron dialog via Obsidian window
 	try {
-		const electron = (window as unknown as { require?: (mod: string) => any }).require?.("electron")
-			?? (window as unknown as { electron?: any }).electron;
+		const win = window as unknown as WindowWithElectron;
+		const electron = win.require ? win.require("electron") : win.electron;
 		const dialog = electron?.remote?.dialog ?? electron?.dialog;
 		if (dialog?.showOpenDialog) {
 			const res = await dialog.showOpenDialog({
@@ -45,7 +62,9 @@ export async function pickDirectory(defaultPath?: string): Promise<string | null
 			}
 			return null;
 		}
-	} catch {}
+	} catch (error) {
+		console.debug("Electron folder dialog unavailable:", error);
+	}
 
 	// 2. Fallback: PowerShell FolderBrowserDialog on Windows
 	if (process.platform === "win32") {
@@ -67,27 +86,36 @@ export async function pickDirectory(defaultPath?: string): Promise<string | null
 			});
 			const path = (result.stdout ?? "").trim().split(/\r?\n/).filter(Boolean).pop();
 			return path || null;
-		} catch {}
+		} catch (error) {
+			console.debug("PowerShell folder dialog error:", error);
+		}
 	}
 
-	// 3. Fallback: HTML input webkitdirectory
+	// 3. Fallback: HTML input webkitdirectory using Obsidian createEl
 	return new Promise((resolveResult) => {
-		const input = document.createElement("input");
-		input.type = "file";
-		input.setAttribute("webkitdirectory", "true");
-		input.setAttribute("directory", "true");
-		input.style.display = "none";
+		const input = createEl("input", {
+			type: "file",
+			cls: "firefly-sync-hidden-input",
+			attr: {
+				webkitdirectory: "true",
+				directory: "true",
+			},
+		});
+		input.setCssStyles({ display: "none" });
 		document.body.appendChild(input);
 
 		let resolved = false;
 		input.addEventListener("change", () => {
 			resolved = true;
 			const file = input.files?.[0];
-			if (!file) { document.body.removeChild(input); resolveResult(null); return; }
+			if (!file) {
+				document.body.removeChild(input);
+				resolveResult(null);
+				return;
+			}
 			const fullPath = (file as unknown as { path?: string })?.path;
 			document.body.removeChild(input);
 			if (fullPath) {
-				const { dirname } = require("path");
 				const relativePath = file.webkitRelativePath;
 				const depth = relativePath.split("/").length - 1;
 				let current = dirname(fullPath);
@@ -103,7 +131,7 @@ export async function pickDirectory(defaultPath?: string): Promise<string | null
 		window.addEventListener(
 			"focus",
 			() => {
-				setTimeout(() => {
+				window.setTimeout(() => {
 					if (!resolved) {
 						if (document.body.contains(input)) document.body.removeChild(input);
 						resolveResult(null);
@@ -128,11 +156,10 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl("h2", { text: t().settingsTitle });
-		containerEl.createEl("p", {
-			text: t().settingsHeaderDesc,
-			cls: "firefly-sync-setting-note",
-		});
+		new Setting(containerEl)
+			.setName(t().settingsTitle)
+			.setDesc(t().settingsHeaderDesc)
+			.setHeading();
 
 		// 1. Blog repository path
 		let repoTextInput: HTMLInputElement;
@@ -276,6 +303,7 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 					}),
 			);
 
+		const defaultIgnore = this.app.vault.configDir || ".obsidian";
 		new Setting(containerEl)
 			.setName(t().settingIgnoredFoldersName)
 			.setDesc(t().settingIgnoredFoldersDesc)
@@ -287,6 +315,9 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 							.split(",")
 							.map((folder) => folder.trim().replace(/^\/+|\/+$/g, ""))
 							.filter(Boolean);
+						if (this.plugin.settings.ignoreFolders.length === 0) {
+							this.plugin.settings.ignoreFolders = [defaultIgnore];
+						}
 						await this.plugin.saveSettings();
 					}),
 			);
