@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type FireflySyncPlugin from "./main";
 import { execFile } from "child_process";
@@ -23,7 +24,7 @@ export const DEFAULT_SETTINGS: FireflySyncSettings = {
 	blogImagesPath: "src/content/posts/images",
 	remote: "origin",
 	branch: "",
-	commitMessage: "Sync Obsidian notes to FireFly",
+	commitMessage: t().defaultCommitMsg,
 	proxyUrl: "",
 	ignoreFolders: [".obsidian"],
 };
@@ -53,7 +54,7 @@ export async function pickDirectory(defaultPath?: string): Promise<string | null
 			const scriptLines = [
 				"Add-Type -AssemblyName System.Windows.Forms",
 				"$dialog = New-Object System.Windows.Forms.FolderBrowserDialog",
-				"$dialog.Description = 'Select Directory'",
+				`$dialog.Description = '${t().dialogSelectDirectory}'`,
 				initial ? `if (Test-Path '${initial}') { $dialog.SelectedPath = '${initial}' }` : "",
 				"if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {",
 				"    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8",
@@ -127,17 +128,17 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-		containerEl.createEl("h2", { text: "FireFly Sync" });
+		containerEl.createEl("h2", { text: t().settingsTitle });
 		containerEl.createEl("p", {
-			text: "Configure local FireFly blog repository, post directory, and media attachment path.",
+			text: t().settingsHeaderDesc,
 			cls: "firefly-sync-setting-note",
 		});
 
 		// 1. Blog repository path
 		let repoTextInput: HTMLInputElement;
 		new Setting(containerEl)
-			.setName("Blog repository path")
-			.setDesc("Root directory of the initialized FireFly Git repository (e.g. E:\\FireFly).")
+			.setName(t().settingRepoPathName)
+			.setDesc(t().settingRepoPathDesc)
 			.addText((text) => {
 				repoTextInput = text.inputEl;
 				text
@@ -150,8 +151,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			})
 			.addButton((button) =>
 				button
-					.setButtonText("Browse...")
-					.setTooltip("Select blog repository root directory")
+					.setButtonText(t().btnBrowse)
+					.setTooltip(t().tooltipBrowseRepo)
 					.onClick(async () => {
 						const selected = await pickDirectory(this.plugin.settings.blogRepositoryPath);
 						if (selected) {
@@ -165,8 +166,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 		// 2. Blog posts directory
 		let postsTextInput: HTMLInputElement;
 		new Setting(containerEl)
-			.setName("Blog posts directory")
-			.setDesc("Path relative to blog repository root, default: src/content/posts.")
+			.setName(t().settingPostsPathName)
+			.setDesc(t().settingPostsPathDesc)
 			.addText((text) => {
 				postsTextInput = text.inputEl;
 				text
@@ -179,8 +180,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			})
 			.addButton((button) =>
 				button
-					.setButtonText("Browse...")
-					.setTooltip("Select blog posts directory")
+					.setButtonText(t().btnBrowse)
+					.setTooltip(t().tooltipBrowsePosts)
 					.onClick(async () => {
 						const repo = this.plugin.settings.blogRepositoryPath;
 						const initial = repo ? resolve(repo, this.plugin.settings.blogPostsPath || "src/content/posts") : undefined;
@@ -197,8 +198,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 		// 3. Blog images directory
 		let imagesTextInput: HTMLInputElement;
 		new Setting(containerEl)
-			.setName("Blog images/media directory")
-			.setDesc("Path relative to blog repository root, default: src/content/posts/images.")
+			.setName(t().settingImagesPathName)
+			.setDesc(t().settingImagesPathDesc)
 			.addText((text) => {
 				imagesTextInput = text.inputEl;
 				text
@@ -211,8 +212,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			})
 			.addButton((button) =>
 				button
-					.setButtonText("Browse...")
-					.setTooltip("Select blog images/media directory")
+					.setButtonText(t().btnBrowse)
+					.setTooltip(t().tooltipBrowseImages)
 					.onClick(async () => {
 						const repo = this.plugin.settings.blogRepositoryPath;
 						const initial = repo ? resolve(repo, this.plugin.settings.blogImagesPath || "src/content/posts/images") : undefined;
@@ -227,8 +228,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Git remote")
-			.setDesc("Remote name (default: origin).")
+			.setName(t().settingRemoteName)
+			.setDesc(t().settingRemoteDesc)
 			.addText((text) =>
 				text
 					.setValue(this.plugin.settings.remote)
@@ -239,8 +240,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Push branch")
-			.setDesc("Leave empty to use the current checked-out branch.")
+			.setName(t().settingBranchName)
+			.setDesc(t().settingBranchDesc)
 			.addText((text) =>
 				text
 					.setPlaceholder("main")
@@ -252,7 +253,7 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Commit message")
+			.setName(t().settingCommitMsgName)
 			.addText((text) =>
 				text
 					.setValue(this.plugin.settings.commitMessage)
@@ -263,8 +264,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Network proxy")
-			.setDesc("Optional. Used for Git push. Supports http://, https://, socks4://, socks5:// (e.g. socks5://127.0.0.1:7897). Leave blank for direct connection.")
+			.setName(t().settingProxyName)
+			.setDesc(t().settingProxyDesc)
 			.addText((text) =>
 				text
 					.setPlaceholder("socks5://127.0.0.1:7897")
@@ -276,8 +277,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Vault ignored folders")
-			.setDesc("Full vault mode will skip these folders, comma-separated. Default: .obsidian.")
+			.setName(t().settingIgnoredFoldersName)
+			.setDesc(t().settingIgnoredFoldersDesc)
 			.addText((text) =>
 				text
 					.setValue(this.plugin.settings.ignoreFolders.join(", "))

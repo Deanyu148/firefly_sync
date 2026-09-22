@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { App, Modal, Notice, Setting } from "obsidian";
 import type { GitFileStatus } from "./git";
 import type { SelectionMode } from "./tree";
@@ -50,7 +51,7 @@ export class SyncSelectionModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle("Select Posts to Sync");
+		this.setTitle(t().modalSelectTitle);
 		this.initializeSelection();
 		this.render();
 	}
@@ -63,17 +64,17 @@ export class SyncSelectionModal extends Modal {
 		const container = this.contentEl;
 		container.empty();
 		container.createEl("p", {
-			text: "Select markdown notes using the vault tree. A git diff preview will be shown before pushing to the blog.",
+			text: t().modalSelectNote,
 			cls: "firefly-sync-setting-note",
 		});
 
 		new Setting(container)
-			.setName("Sync Scope")
-			.setDesc("Current note selects active note only; full vault selects all eligible markdown notes.")
+			.setName(t().modalSyncScopeName)
+			.setDesc(t().modalSyncScopeDesc)
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption("current", "Current note")
-					.addOption("vault", "Full vault")
+					.addOption("current", t().scopeCurrent)
+					.addOption("vault", t().scopeVault)
 					.setValue(this.mode)
 					.onChange((value) => {
 						this.mode = value as SelectionMode;
@@ -83,9 +84,9 @@ export class SyncSelectionModal extends Modal {
 			);
 
 		new Setting(container)
-			.setName("Filter notes")
+			.setName(t().modalFilterName)
 			.addText((text) =>
-				text.setPlaceholder("Search files or folders...").onChange((value) => {
+				text.setPlaceholder(t().modalFilterPlaceholder).onChange((value) => {
 					this.searchQuery = value.toLocaleLowerCase().trim();
 					this.renderTree();
 				}),
@@ -93,12 +94,12 @@ export class SyncSelectionModal extends Modal {
 
 		const actions = container.createDiv({ cls: "firefly-sync-selection-actions" });
 		this.countEl = actions.createSpan();
-		const selectAll = actions.createEl("button", { text: "Select all" });
+		const selectAll = actions.createEl("button", { text: t().btnSelectAll });
 		selectAll.addEventListener("click", () => {
 			for (const entry of this.filteredEntries()) this.selected.add(entry.path);
 			this.renderTree();
 		});
-		const clear = actions.createEl("button", { text: "Clear" });
+		const clear = actions.createEl("button", { text: t().btnClear });
 		clear.addEventListener("click", () => {
 			this.selected.clear();
 			this.renderTree();
@@ -108,9 +109,9 @@ export class SyncSelectionModal extends Modal {
 		this.renderTree();
 
 		const buttons = container.createDiv({ cls: "modal-button-container" });
-		const cancel = buttons.createEl("button", { text: "Cancel" });
+		const cancel = buttons.createEl("button", { text: t().btnCancel });
 		cancel.addEventListener("click", () => this.close());
-		const submit = buttons.createEl("button", { text: "Review Diff", cls: "mod-cta" });
+		const submit = buttons.createEl("button", { text: t().btnReviewDiff, cls: "mod-cta" });
 		submit.addEventListener("click", () => void this.showDiffForSelection());
 	}
 
@@ -142,7 +143,7 @@ export class SyncSelectionModal extends Modal {
 		this.treeEl.empty();
 		const entries = this.filteredEntries();
 		if (entries.length === 0) {
-			this.treeEl.createDiv({ cls: "firefly-sync-tree-empty", text: "No eligible markdown notes found." });
+			this.treeEl.createDiv({ cls: "firefly-sync-tree-empty", text: t().treeEmpty });
 			this.updateSelectionCount();
 			return;
 		}
@@ -189,7 +190,7 @@ export class SyncSelectionModal extends Modal {
 		row.createSpan({ cls: "firefly-sync-file-name", text: node.name });
 		if (node.isFile && node.path) {
 			const status = this.gitStatuses.get(this.statusKey(node.path));
-			row.createSpan({ cls: "firefly-sync-file-state", text: status?.status ?? "Pending" });
+			row.createSpan({ cls: "firefly-sync-file-state", text: status?.status ?? t().statusPending });
 			row.addEventListener("dblclick", () => void this.showSingleDiff(node.path!));
 		} else {
 			row.createSpan({ cls: "firefly-sync-file-state", text: `${descendantPaths.length}` });
@@ -227,7 +228,7 @@ export class SyncSelectionModal extends Modal {
 	}
 
 	private updateSelectionCount(): void {
-		this.countEl?.setText(`${this.selected.size} notes selected${this.defaultMode === "current" ? " (active note default)" : ""}`);
+		this.countEl?.setText(t().selectionCount(this.selected.size, this.defaultMode === "current"));
 	}
 
 	private async showSingleDiff(path: string): Promise<void> {
@@ -235,21 +236,21 @@ export class SyncSelectionModal extends Modal {
 			const previews = await this.loadPreviews([path]);
 			new DiffReviewModal(this.app, previews, this.onSubmit).open();
 		} catch (error) {
-			new Notice(`Failed to generate diff: ${error instanceof Error ? error.message : String(error)}`);
+			new Notice(t().noticeDiffError(error instanceof Error ? error.message : String(error)));
 		}
 	}
 
 	private async showDiffForSelection(): Promise<void> {
 		const paths = [...this.selected].sort();
 		if (paths.length === 0) {
-			new Notice("Please select at least one note.");
+			new Notice(t().noticeSelectAtLeastOne);
 			return;
 		}
 		try {
 			const previews = await this.loadPreviews(paths);
 			new DiffReviewModal(this.app, previews, this.onSubmit).open();
 		} catch (error) {
-			new Notice(`Failed to generate diff: ${error instanceof Error ? error.message : String(error)}`);
+			new Notice(t().noticeDiffError(error instanceof Error ? error.message : String(error)));
 		}
 	}
 }
@@ -270,7 +271,7 @@ export class DiffReviewModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle("Review Git Diff");
+		this.setTitle(t().modalDiffTitle);
 		this.render();
 		if (this.previews[0]) this.renderPreview(this.previews[0]);
 	}
@@ -283,7 +284,7 @@ export class DiffReviewModal extends Modal {
 		const container = this.contentEl;
 		container.empty();
 		container.createEl("p", {
-			text: "Review git changes that will be copied and pushed to the FireFly blog. Uncheck any files to exclude.",
+			text: t().modalDiffNote,
 			cls: "firefly-sync-setting-note",
 		});
 		const layout = container.createDiv({ cls: "firefly-sync-diff-layout" });
@@ -292,13 +293,13 @@ export class DiffReviewModal extends Modal {
 		this.renderList();
 
 		const buttons = container.createDiv({ cls: "modal-button-container" });
-		const cancel = buttons.createEl("button", { text: "Back" });
+		const cancel = buttons.createEl("button", { text: t().btnBack });
 		cancel.addEventListener("click", () => this.close());
-		const submit = buttons.createEl("button", { text: "Sync & Push", cls: "mod-cta" });
+		const submit = buttons.createEl("button", { text: t().btnSyncAndPush, cls: "mod-cta" });
 		submit.addEventListener("click", () => {
 			const paths = [...this.selected].sort();
 			if (paths.length === 0) {
-				new Notice("Please keep at least one file selected.");
+				new Notice(t().noticeKeepAtLeastOne);
 				return;
 			}
 			this.close();
@@ -334,7 +335,7 @@ export class DiffReviewModal extends Modal {
 		});
 		if (!preview.diff) {
 			this.diffEl.createEl("div", {
-				text: "No diff. Synchronizing this file will not alter content in the target repository.",
+				text: t().diffNoChange,
 				cls: "firefly-sync-setting-note",
 			});
 			return;
@@ -360,10 +361,10 @@ export class GitStatusModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle(`Git Change · ${this.status.path}`);
+		this.setTitle(t().statusModalTitle(this.status.path));
 		const diff = this.contentEl.createDiv({ cls: "firefly-sync-diff" });
 		if (!this.status.diff) {
-			diff.setText("No diff available to display.");
+			diff.setText(t().statusModalEmpty);
 			return;
 		}
 		for (const line of this.status.diff.replace(/\r\n/g, "\n").split("\n")) {

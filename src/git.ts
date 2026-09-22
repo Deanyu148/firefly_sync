@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { copyFile, mkdir, readFile } from "fs/promises";
 import { execFile } from "child_process";
 import { promisify } from "util";
@@ -20,7 +21,7 @@ export interface SyncPreviewInput {
 }
 
 export interface SyncPreview extends SyncPreviewInput {
-	statusLabel: "Added" | "Modified" | "Unchanged";
+	statusLabel: string;
 	diff: string;
 }
 
@@ -102,12 +103,12 @@ export function parseGitStatus(output: string): GitFileStatus[] {
 }
 
 function statusLabel(indexStatus: string, workTreeStatus: string): string {
-	if (indexStatus === "?" && workTreeStatus === "?") return "Untracked";
-	if (indexStatus === "A" || workTreeStatus === "A") return "Added";
-	if (indexStatus === "D" || workTreeStatus === "D") return "Deleted";
-	if (indexStatus === "R" || workTreeStatus === "R") return "Renamed";
-	if (indexStatus === "U" || workTreeStatus === "U") return "Conflicted";
-	return "Modified";
+	if (indexStatus === "?" && workTreeStatus === "?") return t().statusUntracked;
+	if (indexStatus === "A" || workTreeStatus === "A") return t().statusAdded;
+	if (indexStatus === "D" || workTreeStatus === "D") return t().statusDeleted;
+	if (indexStatus === "R" || workTreeStatus === "R") return t().statusRenamed;
+	if (indexStatus === "U" || workTreeStatus === "U") return t().statusConflicted;
+	return t().statusModified;
 }
 
 export async function getPathDiff(repositoryPath: string, path: string): Promise<string> {
@@ -155,11 +156,11 @@ export async function getSyncPreview(repositoryPath: string, input: SyncPreviewI
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
 	}
 
-	if (target && target.equals(source)) return { ...input, statusLabel: "Unchanged", diff: "" };
+	if (target && target.equals(source)) return { ...input, statusLabel: t().statusUnchanged, diff: "" };
 	if (!target) {
 		return {
 			...input,
-			statusLabel: "Added",
+			statusLabel: t().statusAdded,
 			diff: isBinary(source)
 				? `Binary file ${input.targetRelativePath} is not shown.`
 				: formatNewFileDiff(input.targetRelativePath, source.toString("utf8")),
@@ -169,7 +170,7 @@ export async function getSyncPreview(repositoryPath: string, input: SyncPreviewI
 		isBinary(target) || isBinary(source)
 			? `Binary files ${input.targetRelativePath} differ.`
 			: await getFilePairDiff(repositoryPath, input.targetRelativePath, targetAbsolutePath, input.sourceAbsolutePath);
-	return { ...input, statusLabel: "Modified", diff };
+	return { ...input, statusLabel: t().statusModified, diff };
 }
 
 async function getFilePairDiff(
@@ -267,10 +268,10 @@ export async function commitAndPush(
 	branch?: string,
 	proxyUrl?: string,
 ): Promise<string> {
-	if (relativePaths.length === 0) throw new Error("No files to commit.");
+	if (relativePaths.length === 0) throw new Error(t().errNoFilesToCommit);
 	await runGit(repositoryPath, ["add", "--", ...relativePaths]);
 	const staged = await runGit(repositoryPath, ["diff", "--cached", "--name-only", "--", ...relativePaths]);
-	if (!staged.trim()) return "No new Git changes detected, commit not created.";
+	if (!staged.trim()) return t().msgNoGitChanges;
 	await runGit(repositoryPath, ["commit", "-m", commitMessage, "--", ...relativePaths]);
 	const pushArgs: string[] = [];
 	const cleanProxy = proxyUrl?.trim();
@@ -281,8 +282,8 @@ export async function commitAndPush(
 	if (branch) pushArgs.push(branch);
 	await runGit(repositoryPath, pushArgs);
 	const branchLabel = branch ? `/${branch}` : "";
-	const proxyLabel = cleanProxy ? ` (via proxy ${cleanProxy})` : "";
-	return `Committed ${relativePaths.length} files and pushed to ${remote}${branchLabel}${proxyLabel}.`;
+	const proxyLabel = cleanProxy ? t().proxyLabel(cleanProxy) : "";
+	return t().msgCommittedAndPushed(relativePaths.length, remote, branchLabel, proxyLabel);
 }
 
 export function gitErrorMessage(error: unknown): string {

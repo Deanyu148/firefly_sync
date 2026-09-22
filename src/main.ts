@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 import { access, stat } from "fs/promises";
 import { FileSystemAdapter, ItemView, Notice, Plugin, WorkspaceLeaf, setIcon } from "obsidian";
 import type { TFile } from "obsidian";
@@ -36,12 +37,12 @@ export default class FireflySyncPlugin extends Plugin {
 
 		this.addCommand({
 			id: "open-sync-panel",
-			name: "Open sync panel",
+			name: t().cmdOpenSyncPanel,
 			callback: () => void this.activateView(),
 		});
 		this.addCommand({
 			id: "sync-current-note",
-			name: "Sync current note",
+			name: t().cmdSyncCurrentNote,
 			checkCallback: (checking) => {
 				const file = this.app.workspace.getActiveFile();
 				if (!file || file.extension !== "md") return false;
@@ -51,10 +52,10 @@ export default class FireflySyncPlugin extends Plugin {
 		});
 		this.addCommand({
 			id: "sync-full-firefly-vault",
-			name: "Sync full FireFly vault",
+			name: t().cmdSyncFullVault,
 			callback: () => void this.openSelectionModal(undefined, "vault"),
 		});
-		this.addRibbonIcon("git-pull-request", "Open FireFly Sync", () => void this.activateView());
+		this.addRibbonIcon("git-pull-request", t().ribbonTitle, () => void this.activateView());
 		this.registerView(VIEW_TYPE_FIREFLY_SYNC, (leaf) => new FireflySyncView(leaf, this));
 		this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.refreshView()));
 	}
@@ -77,7 +78,7 @@ export default class FireflySyncPlugin extends Plugin {
 		if (!leaf) {
 			leaf = this.app.workspace.getRightLeaf(false) ?? undefined;
 			if (!leaf) {
-				new Notice("Unable to open the FireFly Sync side panel.");
+				new Notice(t().noticeCannotOpenRightLeaf);
 				return;
 			}
 			await leaf.setViewState({ type: VIEW_TYPE_FIREFLY_SYNC, active: true });
@@ -103,7 +104,7 @@ export default class FireflySyncPlugin extends Plugin {
 			this.statusByPath = new Map(statuses.map((status) => [status.path, status]));
 			await this.refreshView();
 		} catch (error) {
-			if (showError) new Notice(`Failed to read blog Git status: ${gitErrorMessage(error)}`);
+			if (showError) new Notice(t().noticeReadGitStatusFailed(gitErrorMessage(error)));
 		}
 	}
 
@@ -130,7 +131,7 @@ export default class FireflySyncPlugin extends Plugin {
 				this.getPostsPrefix(),
 			).open();
 		} catch (error) {
-			new Notice(`Unable to open sync selector: ${gitErrorMessage(error)}`);
+			new Notice(t().noticeOpenSelectorFailed(gitErrorMessage(error)));
 		}
 	}
 
@@ -146,7 +147,7 @@ export default class FireflySyncPlugin extends Plugin {
 			const repository = await this.getBlogRepositoryRoot();
 			await copyToBlog(repository, previewsToSync);
 			const branch = this.settings.branch || (await getCurrentBranch(repository));
-			if (!branch) throw new Error("Target blog repository is in a detached HEAD state. Please specify a branch in settings.");
+			if (!branch) throw new Error(t().errDetachedHead);
 			const message = await commitAndPush(
 				repository,
 				previewsToSync.map((file) => file.targetRelativePath),
@@ -158,7 +159,7 @@ export default class FireflySyncPlugin extends Plugin {
 			new Notice(message, 8000);
 			await this.refreshGitStatus(false);
 		} catch (error) {
-			new Notice(`Sync failed: ${gitErrorMessage(error)}`, 10000);
+			new Notice(t().noticeSyncFailed(gitErrorMessage(error)), 10000);
 			await this.refreshGitStatus(false);
 		}
 	}
@@ -176,7 +177,7 @@ export default class FireflySyncPlugin extends Plugin {
 	private async resolveAllSyncFiles(markdownPaths: string[], mode: SelectionMode): Promise<VaultSyncFile[]> {
 		const adapter = this.app.vault.adapter;
 		if (!(adapter instanceof FileSystemAdapter)) {
-			throw new Error("FireFly Sync only supports local desktop file system vaults.");
+			throw new Error(t().errDesktopOnly);
 		}
 		const vaultBasePath = adapter.getBasePath();
 		const allFiles = this.app.vault.getFiles();
@@ -280,7 +281,7 @@ export default class FireflySyncPlugin extends Plugin {
 
 	private async getBlogRepositoryRoot(): Promise<string> {
 		const configuredPath = this.settings.blogRepositoryPath.trim();
-		if (!configuredPath) throw new Error("Please configure the FireFly blog repository path in plugin settings (e.g. E:\\FireFly).");
+		if (!configuredPath) throw new Error(t().errConfigRepoFirst);
 		await assertGitRepository(configuredPath);
 		const repository = (await runGit(configuredPath, ["rev-parse", "--show-toplevel"])).trim();
 		const postsDir = this.getPostsPrefix();
@@ -291,20 +292,18 @@ export default class FireflySyncPlugin extends Plugin {
 	private async assertFullVaultLayout(): Promise<void> {
 		const adapter = this.app.vault.adapter;
 		if (!(adapter instanceof FileSystemAdapter)) {
-			throw new Error("Full vault sync only supports local desktop file system vaults.");
+			throw new Error(t().errDesktopOnly);
 		}
 		const vaultPath = adapter.getBasePath();
 		const folder = basename(vaultPath).toLocaleLowerCase();
 		const parent = basename(dirname(vaultPath)).toLocaleLowerCase();
 		if (folder !== "firefly" || parent !== "firefly") {
-			throw new Error(
-				`Full vault sync requires a path structured as <workspace>\\firefly\\firefly. Current vault: ${vaultPath}`,
-			);
+			throw new Error(t().errFullVaultLayout(vaultPath));
 		}
 		try {
 			if (!(await stat(join(vaultPath, ".obsidian"))).isDirectory()) throw new Error("not a directory");
 		} catch {
-			throw new Error(`Vault root missing .obsidian: ${vaultPath}`);
+			throw new Error(t().errMissingObsidianDir(vaultPath));
 		}
 	}
 
@@ -356,10 +355,10 @@ export class FireflySyncView extends ItemView {
 		const icon = toolbar.createSpan({ cls: "firefly-sync-toolbar-icon" });
 		setIcon(icon, "git-pull-request");
 		toolbar.createSpan({ cls: "firefly-sync-title", text: "FireFly Sync" });
-		const refresh = toolbar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": "Refresh Git status" } });
+		const refresh = toolbar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": t().refreshAriaLabel } });
 		setIcon(refresh, "refresh-cw");
 		refresh.addEventListener("click", () => void this.plugin.refreshGitStatus());
-		const settings = toolbar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": "Open FireFly Sync settings" } });
+		const settings = toolbar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": t().settingsAriaLabel } });
 		setIcon(settings, "settings");
 		settings.addEventListener("click", () => {
 			const setting = (this.app as unknown as { setting?: { open: () => void; openTabById: (id: string) => void } }).setting;
@@ -368,16 +367,16 @@ export class FireflySyncView extends ItemView {
 		});
 
 		const repository = panel.createDiv({ cls: "firefly-sync-repository" });
-		repository.setText(this.plugin.settings.blogRepositoryPath || "Please configure blog repository path in settings");
+		repository.setText(this.plugin.settings.blogRepositoryPath || t().repoPlaceholder);
 
 		const actions = panel.createDiv({ cls: "firefly-sync-tabs" });
-		const current = actions.createEl("button", { text: "Sync Current Note", cls: "mod-cta" });
+		const current = actions.createEl("button", { text: t().btnSyncCurrent, cls: "mod-cta" });
 		current.addEventListener("click", () => void this.plugin.openSelectionModal(this.app.workspace.getActiveFile() ?? undefined, "current"));
-		const vault = actions.createEl("button", { text: "Sync Full Vault" });
+		const vault = actions.createEl("button", { text: t().btnSyncVault });
 		vault.addEventListener("click", () => void this.plugin.openSelectionModal(undefined, "vault"));
 
 		const heading = panel.createDiv({ cls: "firefly-sync-section-heading" });
-		heading.createSpan({ text: "Blog Git Changes" });
+		heading.createSpan({ text: t().headingBlogGitChanges });
 		heading.createSpan({ cls: "firefly-sync-count", text: `${this.plugin.statusByPath.size}` });
 		const tree = panel.createDiv({ cls: "firefly-sync-tree" });
 		this.renderStatusTree(tree);
@@ -385,21 +384,21 @@ export class FireflySyncView extends ItemView {
 		const status = panel.createDiv({ cls: "firefly-sync-status" });
 		status.createDiv({
 			cls: "firefly-sync-status-line",
-			text: "Review git diff previews after selecting notes. Only confirmed changes will be copied and committed.",
+			text: t().sidebarTooltip,
 		});
 		const bottom = panel.createDiv({ cls: "firefly-sync-bottom" });
-		const open = bottom.createEl("button", { text: "Open Sync Selector", cls: "mod-cta" });
+		const open = bottom.createEl("button", { text: t().btnOpenSelector, cls: "mod-cta" });
 		open.addEventListener("click", () => void this.plugin.openSelectionModal(this.app.workspace.getActiveFile() ?? undefined, "current"));
 	}
 
 	private renderStatusTree(parent: HTMLElement): void {
 		if (!this.plugin.settings.blogRepositoryPath) {
-			parent.createDiv({ cls: "firefly-sync-tree-empty", text: "Working tree changes will appear here after configuring the blog repository." });
+			parent.createDiv({ cls: "firefly-sync-tree-empty", text: t().sidebarEmptyNoRepo });
 			return;
 		}
 		const statuses = [...this.plugin.statusByPath.values()].sort((a, b) => a.path.localeCompare(b.path));
 		if (statuses.length === 0) {
-			parent.createDiv({ cls: "firefly-sync-tree-empty", text: "Blog working directory is clean." });
+			parent.createDiv({ cls: "firefly-sync-tree-empty", text: t().sidebarEmptyClean });
 			return;
 		}
 		for (const gitStatus of statuses) {
