@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - "*"
+      - "[0-9]+.[0-9]+.[0-9]+"
 
 permissions:
   contents: write
@@ -14,6 +14,42 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate tag format
+        run: |
+          TAG="${{ github.ref_name }}"
+          if ! [[ "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: Tag '$TAG' is not in x.x.x decimal format (without 'v')."
+            exit 1
+          fi
+          echo "Release version: $TAG"
+
+      - name: Sync version to manifest.json and package.json
+        run: |
+          node -e '
+            const fs = require("fs");
+            const tag = process.env.TAG;
+
+            // manifest.json
+            const manifest = JSON.parse(fs.readFileSync("manifest.json", "utf8"));
+            manifest.version = tag;
+            fs.writeFileSync("manifest.json", JSON.stringify(manifest, null, 2) + "\n");
+
+            // package.json
+            const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            pkg.version = tag;
+            fs.writeFileSync("package.json", JSON.stringify(pkg, null, 2) + "\n");
+
+            // versions.json
+            let versions = {};
+            try {
+              versions = JSON.parse(fs.readFileSync("versions.json", "utf8"));
+            } catch {}
+            versions[tag] = manifest.minAppVersion || "1.5.0";
+            fs.writeFileSync("versions.json", JSON.stringify(versions, null, 2) + "\n");
+          '
+        env:
+          TAG: ${{ github.ref_name }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -38,10 +74,7 @@ jobs:
       - name: Package portable zip
         run: |
           mkdir -p build/firefly-sync
-          cp main.js manifest.json styles.css LICENSE README.md build/firefly-sync/
-          if [ -f versions.json ]; then
-            cp versions.json build/firefly-sync/
-          fi
+          cp main.js manifest.json styles.css versions.json LICENSE README.md build/firefly-sync/
           cd build
           zip -r ../firefly-sync.zip firefly-sync/
           cd ..
@@ -49,7 +82,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -57,4 +91,5 @@ jobs:
             main.js
             manifest.json
             styles.css
+            versions.json
             firefly-sync.zip
