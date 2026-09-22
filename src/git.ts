@@ -20,7 +20,7 @@ export interface SyncPreviewInput {
 }
 
 export interface SyncPreview extends SyncPreviewInput {
-	statusLabel: "新增" | "修改" | "无变化";
+	statusLabel: "Added" | "Modified" | "Unchanged";
 	diff: string;
 }
 
@@ -102,12 +102,12 @@ export function parseGitStatus(output: string): GitFileStatus[] {
 }
 
 function statusLabel(indexStatus: string, workTreeStatus: string): string {
-	if (indexStatus === "?" && workTreeStatus === "?") return "未跟踪";
-	if (indexStatus === "A" || workTreeStatus === "A") return "新增";
-	if (indexStatus === "D" || workTreeStatus === "D") return "删除";
-	if (indexStatus === "R" || workTreeStatus === "R") return "重命名";
-	if (indexStatus === "U" || workTreeStatus === "U") return "冲突";
-	return "修改";
+	if (indexStatus === "?" && workTreeStatus === "?") return "Untracked";
+	if (indexStatus === "A" || workTreeStatus === "A") return "Added";
+	if (indexStatus === "D" || workTreeStatus === "D") return "Deleted";
+	if (indexStatus === "R" || workTreeStatus === "R") return "Renamed";
+	if (indexStatus === "U" || workTreeStatus === "U") return "Conflicted";
+	return "Modified";
 }
 
 export async function getPathDiff(repositoryPath: string, path: string): Promise<string> {
@@ -135,7 +135,7 @@ async function getUntrackedDiff(repositoryPath: string, path: string): Promise<s
 		return formatNewFileDiff(path, content.toString("utf8"));
 	} catch (error) {
 		const detail = error instanceof Error ? error.message : String(error);
-		return `无法读取未跟踪文件 ${path}: ${detail}`;
+		return `Unable to read untracked file ${path}: ${detail}`;
 	}
 }
 
@@ -155,11 +155,11 @@ export async function getSyncPreview(repositoryPath: string, input: SyncPreviewI
 		if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
 	}
 
-	if (target && target.equals(source)) return { ...input, statusLabel: "无变化", diff: "" };
+	if (target && target.equals(source)) return { ...input, statusLabel: "Unchanged", diff: "" };
 	if (!target) {
 		return {
 			...input,
-			statusLabel: "新增",
+			statusLabel: "Added",
 			diff: isBinary(source)
 				? `Binary file ${input.targetRelativePath} is not shown.`
 				: formatNewFileDiff(input.targetRelativePath, source.toString("utf8")),
@@ -169,7 +169,7 @@ export async function getSyncPreview(repositoryPath: string, input: SyncPreviewI
 		isBinary(target) || isBinary(source)
 			? `Binary files ${input.targetRelativePath} differ.`
 			: await getFilePairDiff(repositoryPath, input.targetRelativePath, targetAbsolutePath, input.sourceAbsolutePath);
-	return { ...input, statusLabel: "修改", diff };
+	return { ...input, statusLabel: "Modified", diff };
 }
 
 async function getFilePairDiff(
@@ -231,7 +231,7 @@ function resolveRepositoryPath(repositoryPath: string, relativePath: string): st
 	const target = resolve(root, relativePath.replaceAll("/", sep));
 	const relation = relative(root, target);
 	if (relation === ".." || relation.startsWith(`..${sep}`) || relation.includes(`${sep}..${sep}`)) {
-		throw new Error(`拒绝访问博客仓库之外的路径：${relativePath}`);
+		throw new Error(`Access denied outside blog repository: ${relativePath}`);
 	}
 	return target;
 }
@@ -242,7 +242,7 @@ export function resolveBlogPostPath(repositoryPath: string, relativePath: string
 		const allowedRoot = resolve(repositoryPath, allowedPrefix.replaceAll("/", sep));
 		const relation = relative(allowedRoot, target);
 		if (relation.startsWith(".." + sep) || relation === ".." || relation.includes(sep + ".." + sep)) {
-			throw new Error(`同步目标超出指定目录范围 ${allowedPrefix}：${relativePath}`);
+			throw new Error(`Target path outside specified directory ${allowedPrefix}: ${relativePath}`);
 		}
 	}
 	return target;
@@ -267,10 +267,10 @@ export async function commitAndPush(
 	branch?: string,
 	proxyUrl?: string,
 ): Promise<string> {
-	if (relativePaths.length === 0) throw new Error("没有可提交的文件。");
+	if (relativePaths.length === 0) throw new Error("No files to commit.");
 	await runGit(repositoryPath, ["add", "--", ...relativePaths]);
 	const staged = await runGit(repositoryPath, ["diff", "--cached", "--name-only", "--", ...relativePaths]);
-	if (!staged.trim()) return "没有检测到新的 Git 修改，未创建提交。";
+	if (!staged.trim()) return "No new Git changes detected, commit not created.";
 	await runGit(repositoryPath, ["commit", "-m", commitMessage, "--", ...relativePaths]);
 	const pushArgs: string[] = [];
 	const cleanProxy = proxyUrl?.trim();
@@ -281,8 +281,8 @@ export async function commitAndPush(
 	if (branch) pushArgs.push(branch);
 	await runGit(repositoryPath, pushArgs);
 	const branchLabel = branch ? `/${branch}` : "";
-	const proxyLabel = cleanProxy ? `（经代理 ${cleanProxy}）` : "";
-	return `已提交 ${relativePaths.length} 个文件并推送到 ${remote}${branchLabel}${proxyLabel}。`;
+	const proxyLabel = cleanProxy ? ` (via proxy ${cleanProxy})` : "";
+	return `Committed ${relativePaths.length} files and pushed to ${remote}${branchLabel}${proxyLabel}.`;
 }
 
 export function gitErrorMessage(error: unknown): string {

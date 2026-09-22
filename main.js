@@ -100,12 +100,12 @@ function parseGitStatus(output) {
   return statuses;
 }
 function statusLabel(indexStatus, workTreeStatus) {
-  if (indexStatus === "?" && workTreeStatus === "?") return "\u672A\u8DDF\u8E2A";
-  if (indexStatus === "A" || workTreeStatus === "A") return "\u65B0\u589E";
-  if (indexStatus === "D" || workTreeStatus === "D") return "\u5220\u9664";
-  if (indexStatus === "R" || workTreeStatus === "R") return "\u91CD\u547D\u540D";
-  if (indexStatus === "U" || workTreeStatus === "U") return "\u51B2\u7A81";
-  return "\u4FEE\u6539";
+  if (indexStatus === "?" && workTreeStatus === "?") return "Untracked";
+  if (indexStatus === "A" || workTreeStatus === "A") return "Added";
+  if (indexStatus === "D" || workTreeStatus === "D") return "Deleted";
+  if (indexStatus === "R" || workTreeStatus === "R") return "Renamed";
+  if (indexStatus === "U" || workTreeStatus === "U") return "Conflicted";
+  return "Modified";
 }
 async function getPathDiff(repositoryPath, path) {
   const status = await getPathStatus(repositoryPath, path);
@@ -130,7 +130,7 @@ async function getUntrackedDiff(repositoryPath, path) {
     return formatNewFileDiff(path, content.toString("utf8"));
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    return `\u65E0\u6CD5\u8BFB\u53D6\u672A\u8DDF\u8E2A\u6587\u4EF6 ${path}: ${detail}`;
+    return `Unable to read untracked file ${path}: ${detail}`;
   }
 }
 async function getSyncPreviews(repositoryPath, inputs) {
@@ -147,16 +147,16 @@ async function getSyncPreview(repositoryPath, input) {
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
-  if (target && target.equals(source)) return { ...input, statusLabel: "\u65E0\u53D8\u5316", diff: "" };
+  if (target && target.equals(source)) return { ...input, statusLabel: "Unchanged", diff: "" };
   if (!target) {
     return {
       ...input,
-      statusLabel: "\u65B0\u589E",
+      statusLabel: "Added",
       diff: isBinary(source) ? `Binary file ${input.targetRelativePath} is not shown.` : formatNewFileDiff(input.targetRelativePath, source.toString("utf8"))
     };
   }
   const diff = isBinary(target) || isBinary(source) ? `Binary files ${input.targetRelativePath} differ.` : await getFilePairDiff(repositoryPath, input.targetRelativePath, targetAbsolutePath, input.sourceAbsolutePath);
-  return { ...input, statusLabel: "\u4FEE\u6539", diff };
+  return { ...input, statusLabel: "Modified", diff };
 }
 async function getFilePairDiff(repositoryPath, targetRelativePath, targetAbsolutePath, sourceAbsolutePath) {
   const raw = await runGitAllowDiffExit(repositoryPath, [
@@ -203,7 +203,7 @@ function resolveRepositoryPath(repositoryPath, relativePath) {
   const target = (0, import_path.resolve)(root, relativePath.replaceAll("/", import_path.sep));
   const relation = (0, import_path.relative)(root, target);
   if (relation === ".." || relation.startsWith(`..${import_path.sep}`) || relation.includes(`${import_path.sep}..${import_path.sep}`)) {
-    throw new Error(`\u62D2\u7EDD\u8BBF\u95EE\u535A\u5BA2\u4ED3\u5E93\u4E4B\u5916\u7684\u8DEF\u5F84\uFF1A${relativePath}`);
+    throw new Error(`Access denied outside blog repository: ${relativePath}`);
   }
   return target;
 }
@@ -213,7 +213,7 @@ function resolveBlogPostPath(repositoryPath, relativePath, allowedPrefix) {
     const allowedRoot = (0, import_path.resolve)(repositoryPath, allowedPrefix.replaceAll("/", import_path.sep));
     const relation = (0, import_path.relative)(allowedRoot, target);
     if (relation.startsWith(".." + import_path.sep) || relation === ".." || relation.includes(import_path.sep + ".." + import_path.sep)) {
-      throw new Error(`\u540C\u6B65\u76EE\u6807\u8D85\u51FA\u6307\u5B9A\u76EE\u5F55\u8303\u56F4 ${allowedPrefix}\uFF1A${relativePath}`);
+      throw new Error(`Target path outside specified directory ${allowedPrefix}: ${relativePath}`);
     }
   }
   return target;
@@ -226,10 +226,10 @@ async function copyToBlog(repositoryPath, entries) {
   }
 }
 async function commitAndPush(repositoryPath, relativePaths, commitMessage, remote, branch, proxyUrl) {
-  if (relativePaths.length === 0) throw new Error("\u6CA1\u6709\u53EF\u63D0\u4EA4\u7684\u6587\u4EF6\u3002");
+  if (relativePaths.length === 0) throw new Error("No files to commit.");
   await runGit(repositoryPath, ["add", "--", ...relativePaths]);
   const staged = await runGit(repositoryPath, ["diff", "--cached", "--name-only", "--", ...relativePaths]);
-  if (!staged.trim()) return "\u6CA1\u6709\u68C0\u6D4B\u5230\u65B0\u7684 Git \u4FEE\u6539\uFF0C\u672A\u521B\u5EFA\u63D0\u4EA4\u3002";
+  if (!staged.trim()) return "No new Git changes detected, commit not created.";
   await runGit(repositoryPath, ["commit", "-m", commitMessage, "--", ...relativePaths]);
   const pushArgs = [];
   const cleanProxy = proxyUrl?.trim();
@@ -240,8 +240,8 @@ async function commitAndPush(repositoryPath, relativePaths, commitMessage, remot
   if (branch) pushArgs.push(branch);
   await runGit(repositoryPath, pushArgs);
   const branchLabel = branch ? `/${branch}` : "";
-  const proxyLabel = cleanProxy ? `\uFF08\u7ECF\u4EE3\u7406 ${cleanProxy}\uFF09` : "";
-  return `\u5DF2\u63D0\u4EA4 ${relativePaths.length} \u4E2A\u6587\u4EF6\u5E76\u63A8\u9001\u5230 ${remote}${branchLabel}${proxyLabel}\u3002`;
+  const proxyLabel = cleanProxy ? ` (via proxy ${cleanProxy})` : "";
+  return `Committed ${relativePaths.length} files and pushed to ${remote}${branchLabel}${proxyLabel}.`;
 }
 function gitErrorMessage(error) {
   const gitError = error;
@@ -304,7 +304,7 @@ var SyncSelectionModal = class extends import_obsidian.Modal {
     this.modalEl.addClass("firefly-sync-modal");
   }
   onOpen() {
-    this.setTitle("\u9009\u62E9\u540C\u6B65\u5185\u5BB9");
+    this.setTitle("Select Posts to Sync");
     this.initializeSelection();
     this.render();
   }
@@ -315,30 +315,30 @@ var SyncSelectionModal = class extends import_obsidian.Modal {
     const container = this.contentEl;
     container.empty();
     container.createEl("p", {
-      text: "\u4EE5 Obsidian \u6587\u4EF6\u6D4F\u89C8\u5668\u7684\u76EE\u5F55\u6811\u9009\u62E9\u6587\u7AE0\u3002\u786E\u8BA4\u540E\u4F1A\u5148\u663E\u793A\u76EE\u6807\u535A\u5BA2\u7684 Git \u4FEE\u6539\u548C\u5DEE\u5F02\u3002",
+      text: "Select markdown notes using the vault tree. A git diff preview will be shown before pushing to the blog.",
       cls: "firefly-sync-setting-note"
     });
-    new import_obsidian.Setting(container).setName("\u540C\u6B65\u8303\u56F4").setDesc("\u5F53\u524D\u6587\u7AE0\u9ED8\u8BA4\u53EA\u9009\u4E2D\u5F53\u524D\u6253\u5F00\u7684 Markdown\uFF1B\u6574\u4E2A Vault \u4F1A\u6309\u76EE\u5F55\u6811\u52FE\u9009\u6240\u6709\u53EF\u540C\u6B65 Markdown\u3002").addDropdown(
-      (dropdown) => dropdown.addOption("current", "\u5F53\u524D\u6587\u7AE0").addOption("vault", "\u6574\u4E2A Vault").setValue(this.mode).onChange((value) => {
+    new import_obsidian.Setting(container).setName("Sync Scope").setDesc("Current note selects active note only; full vault selects all eligible markdown notes.").addDropdown(
+      (dropdown) => dropdown.addOption("current", "Current note").addOption("vault", "Full vault").setValue(this.mode).onChange((value) => {
         this.mode = value;
         this.initializeSelection();
         this.renderTree();
       })
     );
-    new import_obsidian.Setting(container).setName("\u7B5B\u9009\u6587\u7AE0").addText(
-      (text) => text.setPlaceholder("\u641C\u7D22\u6587\u4EF6\u6216\u76EE\u5F55...").onChange((value) => {
+    new import_obsidian.Setting(container).setName("Filter notes").addText(
+      (text) => text.setPlaceholder("Search files or folders...").onChange((value) => {
         this.searchQuery = value.toLocaleLowerCase().trim();
         this.renderTree();
       })
     );
     const actions = container.createDiv({ cls: "firefly-sync-selection-actions" });
     this.countEl = actions.createSpan();
-    const selectAll = actions.createEl("button", { text: "\u5168\u9009" });
+    const selectAll = actions.createEl("button", { text: "Select all" });
     selectAll.addEventListener("click", () => {
       for (const entry of this.filteredEntries()) this.selected.add(entry.path);
       this.renderTree();
     });
-    const clear = actions.createEl("button", { text: "\u6E05\u7A7A" });
+    const clear = actions.createEl("button", { text: "Clear" });
     clear.addEventListener("click", () => {
       this.selected.clear();
       this.renderTree();
@@ -346,9 +346,9 @@ var SyncSelectionModal = class extends import_obsidian.Modal {
     this.treeEl = container.createDiv({ cls: "firefly-sync-tree" });
     this.renderTree();
     const buttons = container.createDiv({ cls: "modal-button-container" });
-    const cancel = buttons.createEl("button", { text: "\u53D6\u6D88" });
+    const cancel = buttons.createEl("button", { text: "Cancel" });
     cancel.addEventListener("click", () => this.close());
-    const submit = buttons.createEl("button", { text: "\u67E5\u770B\u9009\u4E2D\u5DEE\u5F02", cls: "mod-cta" });
+    const submit = buttons.createEl("button", { text: "Review Diff", cls: "mod-cta" });
     submit.addEventListener("click", () => void this.showDiffForSelection());
   }
   initializeSelection() {
@@ -374,7 +374,7 @@ var SyncSelectionModal = class extends import_obsidian.Modal {
     this.treeEl.empty();
     const entries = this.filteredEntries();
     if (entries.length === 0) {
-      this.treeEl.createDiv({ cls: "firefly-sync-tree-empty", text: "\u6CA1\u6709\u7B26\u5408\u6761\u4EF6\u7684 Markdown \u6587\u7AE0\u3002" });
+      this.treeEl.createDiv({ cls: "firefly-sync-tree-empty", text: "No eligible markdown notes found." });
       this.updateSelectionCount();
       return;
     }
@@ -416,7 +416,7 @@ var SyncSelectionModal = class extends import_obsidian.Modal {
     row.createSpan({ cls: "firefly-sync-file-name", text: node.name });
     if (node.isFile && node.path) {
       const status = this.gitStatuses.get(this.statusKey(node.path));
-      row.createSpan({ cls: "firefly-sync-file-state", text: status?.status ?? "\u5F85\u6BD4\u8F83" });
+      row.createSpan({ cls: "firefly-sync-file-state", text: status?.status ?? "Pending" });
       row.addEventListener("dblclick", () => void this.showSingleDiff(node.path));
     } else {
       row.createSpan({ cls: "firefly-sync-file-state", text: `${descendantPaths.length}` });
@@ -449,27 +449,27 @@ var SyncSelectionModal = class extends import_obsidian.Modal {
     this.renderTree();
   }
   updateSelectionCount() {
-    this.countEl?.setText(`${this.selected.size} \u7BC7\u6587\u7AE0\u5DF2\u9009\u62E9${this.defaultMode === "current" ? "\uFF08\u9ED8\u8BA4\u5F53\u524D\u6587\u7AE0\uFF09" : ""}`);
+    this.countEl?.setText(`${this.selected.size} notes selected${this.defaultMode === "current" ? " (active note default)" : ""}`);
   }
   async showSingleDiff(path) {
     try {
       const previews = await this.loadPreviews([path]);
       new DiffReviewModal(this.app, previews, this.onSubmit).open();
     } catch (error) {
-      new import_obsidian.Notice(`\u8BFB\u53D6\u5DEE\u5F02\u5931\u8D25\uFF1A${error instanceof Error ? error.message : String(error)}`);
+      new import_obsidian.Notice(`Failed to generate diff: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   async showDiffForSelection() {
     const paths = [...this.selected].sort();
     if (paths.length === 0) {
-      new import_obsidian.Notice("\u8BF7\u81F3\u5C11\u9009\u62E9\u4E00\u7BC7\u6587\u7AE0\u3002");
+      new import_obsidian.Notice("Please select at least one note.");
       return;
     }
     try {
       const previews = await this.loadPreviews(paths);
       new DiffReviewModal(this.app, previews, this.onSubmit).open();
     } catch (error) {
-      new import_obsidian.Notice(`\u8BFB\u53D6\u5DEE\u5F02\u5931\u8D25\uFF1A${error instanceof Error ? error.message : String(error)}`);
+      new import_obsidian.Notice(`Failed to generate diff: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 };
@@ -483,7 +483,7 @@ var DiffReviewModal = class extends import_obsidian.Modal {
     this.modalEl.addClass("firefly-sync-modal");
   }
   onOpen() {
-    this.setTitle("\u67E5\u770B Git \u4FEE\u6539\u4E0E\u5DEE\u5F02");
+    this.setTitle("Review Git Diff");
     this.render();
     if (this.previews[0]) this.renderPreview(this.previews[0]);
   }
@@ -494,7 +494,7 @@ var DiffReviewModal = class extends import_obsidian.Modal {
     const container = this.contentEl;
     container.empty();
     container.createEl("p", {
-      text: "\u8FD9\u91CC\u663E\u793A\u590D\u5236\u5230 FireFly \u535A\u5BA2\u540E\u5C06\u4EA7\u751F\u7684 Git diff\u3002\u5DE6\u4FA7\u53EF\u53D6\u6D88\u52FE\u9009\u4E0D\u9700\u8981\u540C\u6B65\u7684\u6587\u4EF6\u3002",
+      text: "Review git changes that will be copied and pushed to the FireFly blog. Uncheck any files to exclude.",
       cls: "firefly-sync-setting-note"
     });
     const layout = container.createDiv({ cls: "firefly-sync-diff-layout" });
@@ -502,13 +502,13 @@ var DiffReviewModal = class extends import_obsidian.Modal {
     this.diffEl = layout.createDiv({ cls: "firefly-sync-diff" });
     this.renderList();
     const buttons = container.createDiv({ cls: "modal-button-container" });
-    const cancel = buttons.createEl("button", { text: "\u8FD4\u56DE" });
+    const cancel = buttons.createEl("button", { text: "Back" });
     cancel.addEventListener("click", () => this.close());
-    const submit = buttons.createEl("button", { text: "\u540C\u6B65\u5E76\u63A8\u9001", cls: "mod-cta" });
+    const submit = buttons.createEl("button", { text: "Sync & Push", cls: "mod-cta" });
     submit.addEventListener("click", () => {
       const paths = [...this.selected].sort();
       if (paths.length === 0) {
-        new import_obsidian.Notice("\u8BF7\u81F3\u5C11\u4FDD\u7559\u4E00\u4E2A\u9700\u8981\u540C\u6B65\u7684\u6587\u4EF6\u3002");
+        new import_obsidian.Notice("Please keep at least one file selected.");
         return;
       }
       this.close();
@@ -542,7 +542,7 @@ var DiffReviewModal = class extends import_obsidian.Modal {
     });
     if (!preview.diff) {
       this.diffEl.createEl("div", {
-        text: "\u6CA1\u6709\u5DEE\u5F02\u3002\u540C\u6B65\u6B64\u6587\u4EF6\u4E0D\u4F1A\u6539\u53D8\u76EE\u6807\u535A\u5BA2\u4E2D\u7684\u5185\u5BB9\u3002",
+        text: "No diff. Synchronizing this file will not alter content in the target repository.",
         cls: "firefly-sync-setting-note"
       });
       return;
@@ -564,10 +564,10 @@ var GitStatusModal = class extends import_obsidian.Modal {
     this.modalEl.addClass("firefly-sync-modal");
   }
   onOpen() {
-    this.setTitle(`Git \u4FEE\u6539 \xB7 ${this.status.path}`);
+    this.setTitle(`Git Change \xB7 ${this.status.path}`);
     const diff = this.contentEl.createDiv({ cls: "firefly-sync-diff" });
     if (!this.status.diff) {
-      diff.setText("\u5F53\u524D\u6CA1\u6709\u53EF\u663E\u793A\u7684\u5DEE\u5F02\u3002");
+      diff.setText("No diff available to display.");
       return;
     }
     for (const line of this.status.diff.replace(/\r\n/g, "\n").split("\n")) {
@@ -593,7 +593,7 @@ var DEFAULT_SETTINGS = {
   blogImagesPath: "src/content/posts/images",
   remote: "origin",
   branch: "",
-  commitMessage: "\u540C\u6B65 Obsidian \u6587\u7AE0\u5230 FireFly",
+  commitMessage: "Sync Obsidian notes to FireFly",
   proxyUrl: "",
   ignoreFolders: [".obsidian"]
 };
@@ -618,12 +618,12 @@ async function pickDirectory(defaultPath) {
       const initial = defaultPath ? defaultPath.replaceAll("\\", "\\\\") : "";
       const scriptLines = [
         "Add-Type -AssemblyName System.Windows.Forms",
-        " = New-Object System.Windows.Forms.FolderBrowserDialog",
-        ".Description = '\u8BF7\u9009\u62E9\u6587\u4EF6\u5939'",
+        "$dialog = New-Object System.Windows.Forms.FolderBrowserDialog",
+        "$dialog.Description = 'Select Directory'",
         initial ? `if (Test-Path '${initial}') { $dialog.SelectedPath = '${initial}' }` : "",
-        "if (.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {",
+        "if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {",
         "    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8",
-        "    Write-Output .SelectedPath",
+        "    Write-Output $dialog.SelectedPath",
         "}"
       ].filter(Boolean).join("; ");
       const result = await execFileAsync2("powershell", ["-NoProfile", "-NonInteractive", "-Command", scriptLines], {
@@ -691,18 +691,18 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
     containerEl.empty();
     containerEl.createEl("h2", { text: "FireFly Sync" });
     containerEl.createEl("p", {
-      text: "\u914D\u7F6E\u672C\u5730 FireFly \u535A\u5BA2 Git \u4ED3\u5E93\u53CA\u6587\u7AE0\u3001\u9644\u4EF6\u5B58\u653E\u8DEF\u5F84\u3002",
+      text: "Configure local FireFly blog repository, post directory, and media attachment path.",
       cls: "firefly-sync-setting-note"
     });
     let repoTextInput;
-    new import_obsidian2.Setting(containerEl).setName("\u535A\u5BA2\u4ED3\u5E93\u8DEF\u5F84").setDesc("\u4F8B\u5982 E:\\FireFly\u3002\u5FC5\u987B\u662F\u5DF2\u7ECF\u521D\u59CB\u5316\u7684 Git \u4ED3\u5E93\u3002").addText((text) => {
+    new import_obsidian2.Setting(containerEl).setName("Blog repository path").setDesc("Root directory of the initialized FireFly Git repository (e.g. E:\\FireFly).").addText((text) => {
       repoTextInput = text.inputEl;
       text.setPlaceholder("E:\\FireFly").setValue(this.plugin.settings.blogRepositoryPath).onChange(async (value) => {
         this.plugin.settings.blogRepositoryPath = value.trim();
         await this.plugin.saveSettings();
       });
     }).addButton(
-      (button) => button.setButtonText("\u6D4F\u89C8...").setTooltip("\u9009\u62E9\u535A\u5BA2\u4ED3\u5E93\u6839\u76EE\u5F55").onClick(async () => {
+      (button) => button.setButtonText("Browse...").setTooltip("Select blog repository root directory").onClick(async () => {
         const selected = await pickDirectory(this.plugin.settings.blogRepositoryPath);
         if (selected) {
           this.plugin.settings.blogRepositoryPath = selected;
@@ -712,14 +712,14 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
       })
     );
     let postsTextInput;
-    new import_obsidian2.Setting(containerEl).setName("\u535A\u5BA2\u6587\u7AE0\u5B58\u653E\u76EE\u5F55").setDesc("\u76F8\u5BF9\u4E8E\u535A\u5BA2\u4ED3\u5E93\u7684\u76F8\u5BF9\u8DEF\u5F84\uFF0C\u9ED8\u8BA4 src/content/posts\u3002\u4E5F\u53EF\u4EE5\u70B9\u51FB\u6D4F\u89C8\u9009\u62E9\u3002").addText((text) => {
+    new import_obsidian2.Setting(containerEl).setName("Blog posts directory").setDesc("Path relative to blog repository root, default: src/content/posts.").addText((text) => {
       postsTextInput = text.inputEl;
       text.setPlaceholder("src/content/posts").setValue(this.plugin.settings.blogPostsPath || DEFAULT_SETTINGS.blogPostsPath).onChange(async (value) => {
         this.plugin.settings.blogPostsPath = this.normalizeRelativePath(value.trim()) || DEFAULT_SETTINGS.blogPostsPath;
         await this.plugin.saveSettings();
       });
     }).addButton(
-      (button) => button.setButtonText("\u6D4F\u89C8...").setTooltip("\u9009\u62E9\u535A\u5BA2\u6587\u7AE0\u5B58\u653E\u76EE\u5F55").onClick(async () => {
+      (button) => button.setButtonText("Browse...").setTooltip("Select blog posts directory").onClick(async () => {
         const repo = this.plugin.settings.blogRepositoryPath;
         const initial = repo ? (0, import_path2.resolve)(repo, this.plugin.settings.blogPostsPath || "src/content/posts") : void 0;
         const selected = await pickDirectory(initial);
@@ -732,14 +732,14 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
       })
     );
     let imagesTextInput;
-    new import_obsidian2.Setting(containerEl).setName("\u535A\u5BA2\u9644\u4EF6/\u56FE\u7247\u5B58\u653E\u76EE\u5F55").setDesc("\u76F8\u5BF9\u4E8E\u535A\u5BA2\u4ED3\u5E93\u7684\u76F8\u5BF9\u8DEF\u5F84\uFF0C\u9ED8\u8BA4 src/content/posts/images\u3002\u4E5F\u53EF\u4EE5\u70B9\u51FB\u6D4F\u89C8\u9009\u62E9\u3002").addText((text) => {
+    new import_obsidian2.Setting(containerEl).setName("Blog images/media directory").setDesc("Path relative to blog repository root, default: src/content/posts/images.").addText((text) => {
       imagesTextInput = text.inputEl;
       text.setPlaceholder("src/content/posts/images").setValue(this.plugin.settings.blogImagesPath || DEFAULT_SETTINGS.blogImagesPath).onChange(async (value) => {
         this.plugin.settings.blogImagesPath = this.normalizeRelativePath(value.trim()) || DEFAULT_SETTINGS.blogImagesPath;
         await this.plugin.saveSettings();
       });
     }).addButton(
-      (button) => button.setButtonText("\u6D4F\u89C8...").setTooltip("\u9009\u62E9\u535A\u5BA2\u9644\u4EF6/\u56FE\u7247\u5B58\u653E\u76EE\u5F55").onClick(async () => {
+      (button) => button.setButtonText("Browse...").setTooltip("Select blog images/media directory").onClick(async () => {
         const repo = this.plugin.settings.blogRepositoryPath;
         const initial = repo ? (0, import_path2.resolve)(repo, this.plugin.settings.blogImagesPath || "src/content/posts/images") : void 0;
         const selected = await pickDirectory(initial);
@@ -751,31 +751,31 @@ var FireflySyncSettingTab = class extends import_obsidian2.PluginSettingTab {
         }
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("Git \u8FDC\u7AEF").setDesc("\u9ED8\u8BA4 origin\u3002").addText(
+    new import_obsidian2.Setting(containerEl).setName("Git remote").setDesc("Remote name (default: origin).").addText(
       (text) => text.setValue(this.plugin.settings.remote).onChange(async (value) => {
         this.plugin.settings.remote = value.trim() || "origin";
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("\u63A8\u9001\u5206\u652F").setDesc("\u7559\u7A7A\u65F6\u4F7F\u7528\u5F53\u524D\u68C0\u51FA\u7684\u5206\u652F\u3002").addText(
+    new import_obsidian2.Setting(containerEl).setName("Push branch").setDesc("Leave empty to use the current checked-out branch.").addText(
       (text) => text.setPlaceholder("main").setValue(this.plugin.settings.branch).onChange(async (value) => {
         this.plugin.settings.branch = value.trim();
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("\u63D0\u4EA4\u4FE1\u606F").addText(
+    new import_obsidian2.Setting(containerEl).setName("Commit message").addText(
       (text) => text.setValue(this.plugin.settings.commitMessage).onChange(async (value) => {
         this.plugin.settings.commitMessage = value.trim() || DEFAULT_SETTINGS.commitMessage;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("\u7F51\u7EDC\u4EE3\u7406").setDesc("\u53EF\u9009\u3002\u7528\u4E8E\u535A\u5BA2 Git \u63A8\u9001\uFF0C\u652F\u6301 http://, https://, socks4://, socks5://\uFF08\u4F8B\u5982 socks5://127.0.0.1:7897 \u6216 http://127.0.0.1:7890\uFF09\u3002\u7559\u7A7A\u5219\u76F4\u8FDE\u3002").addText(
+    new import_obsidian2.Setting(containerEl).setName("Network proxy").setDesc("Optional. Used for Git push. Supports http://, https://, socks4://, socks5:// (e.g. socks5://127.0.0.1:7897). Leave blank for direct connection.").addText(
       (text) => text.setPlaceholder("socks5://127.0.0.1:7897").setValue(this.plugin.settings.proxyUrl || "").onChange(async (value) => {
         this.plugin.settings.proxyUrl = value.trim();
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian2.Setting(containerEl).setName("Vault \u5FFD\u7565\u76EE\u5F55").setDesc("\u6574\u4E2A Vault \u6A21\u5F0F\u4E0D\u4F1A\u540C\u6B65\u8FD9\u4E9B\u76EE\u5F55\uFF0C\u9017\u53F7\u5206\u9694\u3002\u9ED8\u8BA4\u5FFD\u7565 .obsidian\u3002").addText(
+    new import_obsidian2.Setting(containerEl).setName("Vault ignored folders").setDesc("Full vault mode will skip these folders, comma-separated. Default: .obsidian.").addText(
       (text) => text.setValue(this.plugin.settings.ignoreFolders.join(", ")).onChange(async (value) => {
         this.plugin.settings.ignoreFolders = value.split(",").map((folder) => folder.trim().replace(/^\/+|\/+$/g, "")).filter(Boolean);
         await this.plugin.saveSettings();
@@ -810,12 +810,12 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
     this.addSettingTab(new FireflySyncSettingTab(this.app, this));
     this.addCommand({
       id: "open-sync-panel",
-      name: "\u6253\u5F00\u540C\u6B65\u9762\u677F",
+      name: "Open sync panel",
       callback: () => void this.activateView()
     });
     this.addCommand({
       id: "sync-current-note",
-      name: "\u540C\u6B65\u5F53\u524D\u6587\u7AE0",
+      name: "Sync current note",
       checkCallback: (checking) => {
         const file = this.app.workspace.getActiveFile();
         if (!file || file.extension !== "md") return false;
@@ -825,10 +825,10 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
     });
     this.addCommand({
       id: "sync-full-firefly-vault",
-      name: "\u540C\u6B65\u6574\u4E2A FireFly Vault",
+      name: "Sync full FireFly vault",
       callback: () => void this.openSelectionModal(void 0, "vault")
     });
-    this.addRibbonIcon("git-pull-request", "\u6253\u5F00 FireFly Sync", () => void this.activateView());
+    this.addRibbonIcon("git-pull-request", "Open FireFly Sync", () => void this.activateView());
     this.registerView(VIEW_TYPE_FIREFLY_SYNC, (leaf) => new FireflySyncView(leaf, this));
     this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.refreshView()));
   }
@@ -847,7 +847,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
     if (!leaf) {
       leaf = this.app.workspace.getRightLeaf(false) ?? void 0;
       if (!leaf) {
-        new import_obsidian3.Notice("\u65E0\u6CD5\u6253\u5F00\u53F3\u4FA7 FireFly Sync \u9762\u677F\u3002");
+        new import_obsidian3.Notice("Unable to open the FireFly Sync side panel.");
         return;
       }
       await leaf.setViewState({ type: VIEW_TYPE_FIREFLY_SYNC, active: true });
@@ -871,7 +871,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       this.statusByPath = new Map(statuses.map((status) => [status.path, status]));
       await this.refreshView();
     } catch (error) {
-      if (showError) new import_obsidian3.Notice(`\u8BFB\u53D6\u535A\u5BA2 Git \u72B6\u6001\u5931\u8D25\uFF1A${gitErrorMessage(error)}`);
+      if (showError) new import_obsidian3.Notice(`Failed to read blog Git status: ${gitErrorMessage(error)}`);
     }
   }
   async openSelectionModal(currentFile, mode = "current") {
@@ -893,7 +893,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
         this.getPostsPrefix()
       ).open();
     } catch (error) {
-      new import_obsidian3.Notice(`\u65E0\u6CD5\u6253\u5F00\u540C\u6B65\u9009\u62E9\u5668\uFF1A${gitErrorMessage(error)}`);
+      new import_obsidian3.Notice(`Unable to open sync selector: ${gitErrorMessage(error)}`);
     }
   }
   async buildPreviews(paths, mode) {
@@ -907,7 +907,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       const repository = await this.getBlogRepositoryRoot();
       await copyToBlog(repository, previewsToSync);
       const branch = this.settings.branch || await getCurrentBranch(repository);
-      if (!branch) throw new Error("\u5F53\u524D\u535A\u5BA2\u4ED3\u5E93\u5904\u4E8E detached HEAD \u72B6\u6001\uFF0C\u8BF7\u5728\u8BBE\u7F6E\u4E2D\u6307\u5B9A\u8981\u63A8\u9001\u7684\u5206\u652F\u3002");
+      if (!branch) throw new Error("Target blog repository is in a detached HEAD state. Please specify a branch in settings.");
       const message = await commitAndPush(
         repository,
         previewsToSync.map((file) => file.targetRelativePath),
@@ -919,7 +919,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
       new import_obsidian3.Notice(message, 8e3);
       await this.refreshGitStatus(false);
     } catch (error) {
-      new import_obsidian3.Notice(`\u540C\u6B65\u5931\u8D25\uFF1A`, 1e4);
+      new import_obsidian3.Notice(`Sync failed: ${gitErrorMessage(error)}`, 1e4);
       await this.refreshGitStatus(false);
     }
   }
@@ -934,7 +934,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
   async resolveAllSyncFiles(markdownPaths, mode) {
     const adapter = this.app.vault.adapter;
     if (!(adapter instanceof import_obsidian3.FileSystemAdapter)) {
-      throw new Error("FireFly Sync \u4EC5\u652F\u6301\u684C\u9762\u7AEF\u7684\u672C\u5730\u6587\u4EF6\u7CFB\u7EDF Vault\u3002");
+      throw new Error("FireFly Sync only supports local desktop file system vaults.");
     }
     const vaultBasePath = adapter.getBasePath();
     const allFiles = this.app.vault.getFiles();
@@ -1027,7 +1027,7 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
   }
   async getBlogRepositoryRoot() {
     const configuredPath = this.settings.blogRepositoryPath.trim();
-    if (!configuredPath) throw new Error("\u8BF7\u5148\u5728\u63D2\u4EF6\u8BBE\u7F6E\u4E2D\u586B\u5199 FireFly \u535A\u5BA2\u4ED3\u5E93\u8DEF\u5F84\uFF0C\u4F8B\u5982 E:\\FireFly\u3002");
+    if (!configuredPath) throw new Error("Please configure the FireFly blog repository path in plugin settings (e.g. E:\\FireFly).");
     await assertGitRepository(configuredPath);
     const repository = (await runGit(configuredPath, ["rev-parse", "--show-toplevel"])).trim();
     const postsDir = this.getPostsPrefix();
@@ -1037,20 +1037,20 @@ var FireflySyncPlugin = class extends import_obsidian3.Plugin {
   async assertFullVaultLayout() {
     const adapter = this.app.vault.adapter;
     if (!(adapter instanceof import_obsidian3.FileSystemAdapter)) {
-      throw new Error("\u540C\u6B65\u6574\u4E2A Vault \u4EC5\u652F\u6301\u684C\u9762\u7AEF\u7684\u672C\u5730\u6587\u4EF6\u7CFB\u7EDF Vault\u3002");
+      throw new Error("Full vault sync only supports local desktop file system vaults.");
     }
     const vaultPath = adapter.getBasePath();
     const folder = (0, import_path3.basename)(vaultPath).toLocaleLowerCase();
     const parent = (0, import_path3.basename)((0, import_path3.dirname)(vaultPath)).toLocaleLowerCase();
     if (folder !== "firefly" || parent !== "firefly") {
       throw new Error(
-        `\u540C\u6B65\u6574\u4E2A Vault \u8981\u6C42\u76EE\u5F55\u4E3A <\u5DE5\u4F5C\u533A>\\firefly\\firefly\uFF0C\u4F8B\u5982 E:\\\u6587\u6863\\firefly\\firefly\u3002\u5F53\u524D Vault\uFF1A${vaultPath}`
+        `Full vault sync requires a path structured as <workspace>\\firefly\\firefly. Current vault: ${vaultPath}`
       );
     }
     try {
       if (!(await (0, import_promises2.stat)((0, import_path3.join)(vaultPath, ".obsidian"))).isDirectory()) throw new Error("not a directory");
     } catch {
-      throw new Error(`Vault \u6839\u76EE\u5F55\u7F3A\u5C11 .obsidian\uFF1A${vaultPath}`);
+      throw new Error(`Vault root missing .obsidian: ${vaultPath}`);
     }
   }
   isIgnored(path) {
@@ -1092,10 +1092,10 @@ var FireflySyncView = class extends import_obsidian3.ItemView {
     const icon = toolbar.createSpan({ cls: "firefly-sync-toolbar-icon" });
     (0, import_obsidian3.setIcon)(icon, "git-pull-request");
     toolbar.createSpan({ cls: "firefly-sync-title", text: "FireFly Sync" });
-    const refresh = toolbar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": "\u5237\u65B0 Git \u72B6\u6001" } });
+    const refresh = toolbar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": "Refresh Git status" } });
     (0, import_obsidian3.setIcon)(refresh, "refresh-cw");
     refresh.addEventListener("click", () => void this.plugin.refreshGitStatus());
-    const settings = toolbar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": "\u6253\u5F00 FireFly Sync \u8BBE\u7F6E" } });
+    const settings = toolbar.createEl("button", { cls: "clickable-icon", attr: { "aria-label": "Open FireFly Sync settings" } });
     (0, import_obsidian3.setIcon)(settings, "settings");
     settings.addEventListener("click", () => {
       const setting = this.app.setting;
@@ -1103,34 +1103,34 @@ var FireflySyncView = class extends import_obsidian3.ItemView {
       setting?.openTabById(this.plugin.manifest.id);
     });
     const repository = panel.createDiv({ cls: "firefly-sync-repository" });
-    repository.setText(this.plugin.settings.blogRepositoryPath || "\u8BF7\u5728\u8BBE\u7F6E\u4E2D\u914D\u7F6E\u535A\u5BA2\u4ED3\u5E93\u8DEF\u5F84");
+    repository.setText(this.plugin.settings.blogRepositoryPath || "Please configure blog repository path in settings");
     const actions = panel.createDiv({ cls: "firefly-sync-tabs" });
-    const current = actions.createEl("button", { text: "\u540C\u6B65\u5F53\u524D\u6587\u7AE0", cls: "mod-cta" });
+    const current = actions.createEl("button", { text: "Sync Current Note", cls: "mod-cta" });
     current.addEventListener("click", () => void this.plugin.openSelectionModal(this.app.workspace.getActiveFile() ?? void 0, "current"));
-    const vault = actions.createEl("button", { text: "\u540C\u6B65\u6574\u4E2A Vault" });
+    const vault = actions.createEl("button", { text: "Sync Full Vault" });
     vault.addEventListener("click", () => void this.plugin.openSelectionModal(void 0, "vault"));
     const heading = panel.createDiv({ cls: "firefly-sync-section-heading" });
-    heading.createSpan({ text: "\u535A\u5BA2 Git \u4FEE\u6539" });
+    heading.createSpan({ text: "Blog Git Changes" });
     heading.createSpan({ cls: "firefly-sync-count", text: `${this.plugin.statusByPath.size}` });
     const tree = panel.createDiv({ cls: "firefly-sync-tree" });
     this.renderStatusTree(tree);
     const status = panel.createDiv({ cls: "firefly-sync-status" });
     status.createDiv({
       cls: "firefly-sync-status-line",
-      text: "\u9009\u62E9\u6587\u7AE0\u540E\u4F1A\u5148\u9884\u89C8\u76EE\u6807\u535A\u5BA2\u7684 Git diff\uFF1B\u786E\u8BA4\u540E\u53EA\u590D\u5236\u5E76\u63D0\u4EA4\u52FE\u9009\u7684\u6587\u4EF6\u3002"
+      text: "Review git diff previews after selecting notes. Only confirmed changes will be copied and committed."
     });
     const bottom = panel.createDiv({ cls: "firefly-sync-bottom" });
-    const open = bottom.createEl("button", { text: "\u6253\u5F00\u540C\u6B65\u9009\u62E9\u5668", cls: "mod-cta" });
+    const open = bottom.createEl("button", { text: "Open Sync Selector", cls: "mod-cta" });
     open.addEventListener("click", () => void this.plugin.openSelectionModal(this.app.workspace.getActiveFile() ?? void 0, "current"));
   }
   renderStatusTree(parent) {
     if (!this.plugin.settings.blogRepositoryPath) {
-      parent.createDiv({ cls: "firefly-sync-tree-empty", text: "\u914D\u7F6E\u535A\u5BA2\u4ED3\u5E93\u540E\uFF0C\u8FD9\u91CC\u4F1A\u663E\u793A Git \u5DE5\u4F5C\u533A\u4FEE\u6539\u3002" });
+      parent.createDiv({ cls: "firefly-sync-tree-empty", text: "Working tree changes will appear here after configuring the blog repository." });
       return;
     }
     const statuses = [...this.plugin.statusByPath.values()].sort((a, b) => a.path.localeCompare(b.path));
     if (statuses.length === 0) {
-      parent.createDiv({ cls: "firefly-sync-tree-empty", text: "\u535A\u5BA2 Git \u5DE5\u4F5C\u533A\u6CA1\u6709\u4FEE\u6539\u3002" });
+      parent.createDiv({ cls: "firefly-sync-tree-empty", text: "Blog working directory is clean." });
       return;
     }
     for (const gitStatus of statuses) {

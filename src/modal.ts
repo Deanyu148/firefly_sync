@@ -50,7 +50,7 @@ export class SyncSelectionModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle("选择同步内容");
+		this.setTitle("Select Posts to Sync");
 		this.initializeSelection();
 		this.render();
 	}
@@ -63,17 +63,17 @@ export class SyncSelectionModal extends Modal {
 		const container = this.contentEl;
 		container.empty();
 		container.createEl("p", {
-			text: "以 Obsidian 文件浏览器的目录树选择文章。确认后会先显示目标博客的 Git 修改和差异。",
+			text: "Select markdown notes using the vault tree. A git diff preview will be shown before pushing to the blog.",
 			cls: "firefly-sync-setting-note",
 		});
 
 		new Setting(container)
-			.setName("同步范围")
-			.setDesc("当前文章默认只选中当前打开的 Markdown；整个 Vault 会按目录树勾选所有可同步 Markdown。")
+			.setName("Sync Scope")
+			.setDesc("Current note selects active note only; full vault selects all eligible markdown notes.")
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption("current", "当前文章")
-					.addOption("vault", "整个 Vault")
+					.addOption("current", "Current note")
+					.addOption("vault", "Full vault")
 					.setValue(this.mode)
 					.onChange((value) => {
 						this.mode = value as SelectionMode;
@@ -83,9 +83,9 @@ export class SyncSelectionModal extends Modal {
 			);
 
 		new Setting(container)
-			.setName("筛选文章")
+			.setName("Filter notes")
 			.addText((text) =>
-				text.setPlaceholder("搜索文件或目录...").onChange((value) => {
+				text.setPlaceholder("Search files or folders...").onChange((value) => {
 					this.searchQuery = value.toLocaleLowerCase().trim();
 					this.renderTree();
 				}),
@@ -93,12 +93,12 @@ export class SyncSelectionModal extends Modal {
 
 		const actions = container.createDiv({ cls: "firefly-sync-selection-actions" });
 		this.countEl = actions.createSpan();
-		const selectAll = actions.createEl("button", { text: "全选" });
+		const selectAll = actions.createEl("button", { text: "Select all" });
 		selectAll.addEventListener("click", () => {
 			for (const entry of this.filteredEntries()) this.selected.add(entry.path);
 			this.renderTree();
 		});
-		const clear = actions.createEl("button", { text: "清空" });
+		const clear = actions.createEl("button", { text: "Clear" });
 		clear.addEventListener("click", () => {
 			this.selected.clear();
 			this.renderTree();
@@ -108,9 +108,9 @@ export class SyncSelectionModal extends Modal {
 		this.renderTree();
 
 		const buttons = container.createDiv({ cls: "modal-button-container" });
-		const cancel = buttons.createEl("button", { text: "取消" });
+		const cancel = buttons.createEl("button", { text: "Cancel" });
 		cancel.addEventListener("click", () => this.close());
-		const submit = buttons.createEl("button", { text: "查看选中差异", cls: "mod-cta" });
+		const submit = buttons.createEl("button", { text: "Review Diff", cls: "mod-cta" });
 		submit.addEventListener("click", () => void this.showDiffForSelection());
 	}
 
@@ -142,7 +142,7 @@ export class SyncSelectionModal extends Modal {
 		this.treeEl.empty();
 		const entries = this.filteredEntries();
 		if (entries.length === 0) {
-			this.treeEl.createDiv({ cls: "firefly-sync-tree-empty", text: "没有符合条件的 Markdown 文章。" });
+			this.treeEl.createDiv({ cls: "firefly-sync-tree-empty", text: "No eligible markdown notes found." });
 			this.updateSelectionCount();
 			return;
 		}
@@ -189,7 +189,7 @@ export class SyncSelectionModal extends Modal {
 		row.createSpan({ cls: "firefly-sync-file-name", text: node.name });
 		if (node.isFile && node.path) {
 			const status = this.gitStatuses.get(this.statusKey(node.path));
-			row.createSpan({ cls: "firefly-sync-file-state", text: status?.status ?? "待比较" });
+			row.createSpan({ cls: "firefly-sync-file-state", text: status?.status ?? "Pending" });
 			row.addEventListener("dblclick", () => void this.showSingleDiff(node.path!));
 		} else {
 			row.createSpan({ cls: "firefly-sync-file-state", text: `${descendantPaths.length}` });
@@ -227,7 +227,7 @@ export class SyncSelectionModal extends Modal {
 	}
 
 	private updateSelectionCount(): void {
-		this.countEl?.setText(`${this.selected.size} 篇文章已选择${this.defaultMode === "current" ? "（默认当前文章）" : ""}`);
+		this.countEl?.setText(`${this.selected.size} notes selected${this.defaultMode === "current" ? " (active note default)" : ""}`);
 	}
 
 	private async showSingleDiff(path: string): Promise<void> {
@@ -235,21 +235,21 @@ export class SyncSelectionModal extends Modal {
 			const previews = await this.loadPreviews([path]);
 			new DiffReviewModal(this.app, previews, this.onSubmit).open();
 		} catch (error) {
-			new Notice(`读取差异失败：${error instanceof Error ? error.message : String(error)}`);
+			new Notice(`Failed to generate diff: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 
 	private async showDiffForSelection(): Promise<void> {
 		const paths = [...this.selected].sort();
 		if (paths.length === 0) {
-			new Notice("请至少选择一篇文章。");
+			new Notice("Please select at least one note.");
 			return;
 		}
 		try {
 			const previews = await this.loadPreviews(paths);
 			new DiffReviewModal(this.app, previews, this.onSubmit).open();
 		} catch (error) {
-			new Notice(`读取差异失败：${error instanceof Error ? error.message : String(error)}`);
+			new Notice(`Failed to generate diff: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 }
@@ -270,7 +270,7 @@ export class DiffReviewModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle("查看 Git 修改与差异");
+		this.setTitle("Review Git Diff");
 		this.render();
 		if (this.previews[0]) this.renderPreview(this.previews[0]);
 	}
@@ -283,7 +283,7 @@ export class DiffReviewModal extends Modal {
 		const container = this.contentEl;
 		container.empty();
 		container.createEl("p", {
-			text: "这里显示复制到 FireFly 博客后将产生的 Git diff。左侧可取消勾选不需要同步的文件。",
+			text: "Review git changes that will be copied and pushed to the FireFly blog. Uncheck any files to exclude.",
 			cls: "firefly-sync-setting-note",
 		});
 		const layout = container.createDiv({ cls: "firefly-sync-diff-layout" });
@@ -292,13 +292,13 @@ export class DiffReviewModal extends Modal {
 		this.renderList();
 
 		const buttons = container.createDiv({ cls: "modal-button-container" });
-		const cancel = buttons.createEl("button", { text: "返回" });
+		const cancel = buttons.createEl("button", { text: "Back" });
 		cancel.addEventListener("click", () => this.close());
-		const submit = buttons.createEl("button", { text: "同步并推送", cls: "mod-cta" });
+		const submit = buttons.createEl("button", { text: "Sync & Push", cls: "mod-cta" });
 		submit.addEventListener("click", () => {
 			const paths = [...this.selected].sort();
 			if (paths.length === 0) {
-				new Notice("请至少保留一个需要同步的文件。");
+				new Notice("Please keep at least one file selected.");
 				return;
 			}
 			this.close();
@@ -334,7 +334,7 @@ export class DiffReviewModal extends Modal {
 		});
 		if (!preview.diff) {
 			this.diffEl.createEl("div", {
-				text: "没有差异。同步此文件不会改变目标博客中的内容。",
+				text: "No diff. Synchronizing this file will not alter content in the target repository.",
 				cls: "firefly-sync-setting-note",
 			});
 			return;
@@ -360,10 +360,10 @@ export class GitStatusModal extends Modal {
 	}
 
 	onOpen(): void {
-		this.setTitle(`Git 修改 · ${this.status.path}`);
+		this.setTitle(`Git Change · ${this.status.path}`);
 		const diff = this.contentEl.createDiv({ cls: "firefly-sync-diff" });
 		if (!this.status.diff) {
-			diff.setText("当前没有可显示的差异。");
+			diff.setText("No diff available to display.");
 			return;
 		}
 		for (const line of this.status.diff.replace(/\r\n/g, "\n").split("\n")) {

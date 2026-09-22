@@ -1,38 +1,71 @@
 # FireFly Sync
 
-FireFly Sync 是一个 Obsidian 社区插件：它把选中的 Markdown 文章复制到本地 FireFly Astro 博客的 `src/content/posts`，然后使用博客仓库自己的 Git 提交并推送。远端仓库的 CI/CD 可以在收到 push 后自动部署，插件不参与部署流程。
+[中文说明文档 (Chinese Documentation)](./README_zh.md)
 
-## 功能
+**FireFly Sync** is an Obsidian desktop plugin that synchronizes Markdown notes and referenced images to your local [FireFly](https://github.com/Deanyu148/FireFly) Astro blog repository, automatically creating Git commits and pushing changes to your remote repository.
 
-- 右侧 Obsidian 侧边栏，显示博客 Git 工作区修改；点击修改项可查看 diff。
-- 官方 `Modal` 选择窗口：支持“当前文章”和“整个 Vault”两种模式。
-- 当前文章模式默认选中当前打开的 Markdown 文件。
-- 整个 Vault 模式使用和 Obsidian 文件浏览器类似的目录树、折叠、搜索、目录级复选框和全选/清空。
-- 整个 Vault 模式只接受 `E:\文档\firefly\firefly` 这一类目录结构：Vault 目录名必须是 `firefly`，父目录名也必须是 `firefly`，并且根目录存在 `.obsidian`。
-- 同步前按目标博客文件内容生成新增/修改/无变化预览，用户可在 diff 窗口逐文件取消同步。
-- 只复制 Markdown 文章，不复制或修改 `images` 文件夹。
-- 同步后执行 `git add`、`git commit`、`git push`，只提交本次勾选的文章路径。
+---
 
-## 开发
+## Features
 
-```powershell
+- **Blog Git Status Panel**: A dedicated right-sidebar view showing modified, added, and untracked files in your blog repository with quick diff review.
+- **Selective Syncing**:
+  - **Current Note Mode**: Syncs the currently active markdown note and automatically detects and syncs all referenced images.
+  - **Full Vault Mode**: Syncs all valid markdown notes and the entire `images/` directory.
+- **Interactive Directory Tree**: Tree-view selection interface featuring search filtering, folder collapse/expand, directory-level toggles, and select/clear all.
+- **Diff Preview & Confirmation**: Generates git diff previews for every selected file before modifying the target blog repository, allowing individual items to be unchecked before commit.
+- **Customizable Target Paths**: Configurable blog repository root, post directory (default: `src/content/posts`), and media directory (default: `src/content/posts/images`), equipped with native "Browse..." folder pickers.
+- **Network Proxy Support**: Configurable Git proxy supporting `http://`, `https://`, `socks4://`, and `socks5://` protocols for seamless pushing to GitHub or other remote hosts.
+
+---
+
+## Development
+
+Prerequisites: Node.js (>= 18) and `pnpm`.
+
+```bash
+# Install dependencies
 pnpm install
+
+# Run TypeScript checking and build plugin bundle
 pnpm run build
+
+# Run unit and integration tests
 pnpm test
 ```
 
-`npm run build` 会生成 Obsidian 所需的根目录 `main.js`。社区插件发布包至少需要以下文件：
-
+Building produces `main.js` in the repository root. A complete plugin release package requires:
 - `manifest.json`
 - `main.js`
 - `styles.css`
+- `versions.json`
 
-## 安装到本地 Vault
+---
 
-1. 在插件设置中填写本地博客仓库路径，例如 `E:\FireFly`。
-2. 将 `manifest.json`、`main.js`、`styles.css` 和 `versions.json` 放入 Vault 的 `.obsidian/plugins/firefly-sync/`。
-3. 在 Obsidian 的“设置 → 社区插件”中启用 FireFly Sync。
-4. 执行命令“FireFly Sync: 打开同步面板”，或点击左侧功能区图标。
-5. 选择文章、查看 diff，确认后点击“同步并推送”。
+## Installation to Obsidian
 
-插件是桌面端插件：它使用 Obsidian 官方 API 读取 Vault，并使用本机 Git 命令完成提交和推送。请提前在博客仓库中配置好 Git 用户身份、远端认证和推送权限。
+### Method 1: Portable Release (Recommended)
+1. Download `firefly-sync.zip` from the [Latest Release](https://github.com/Deanyu148/firefly_sync/releases/latest).
+2. Extract the archive into your Obsidian vault's `.obsidian/plugins/` directory (resulting in `.obsidian/plugins/firefly-sync/`).
+3. Reload Obsidian (`Ctrl + R`) or restart the application.
+4. Go to **Settings -> Community plugins**, disable Restricted mode if active, and enable **FireFly Sync**.
+
+### Method 2: Manual Installation
+Copy `manifest.json`, `main.js`, `styles.css`, and `versions.json` into `<Your-Vault>/.obsidian/plugins/firefly-sync/`.
+
+---
+
+## Configuration
+
+In Obsidian, navigate to **Settings -> FireFly Sync**:
+1. **Blog Repository Path**: Enter or browse for the local path of your FireFly git repository (e.g. `E:\FireFly`).
+2. **Blog Posts Directory**: Relative path for markdown posts (default: `src/content/posts`).
+3. **Blog Images Directory**: Relative path for images/attachments (default: `src/content/posts/images`).
+4. **Git Remote & Branch**: Remote name (`origin` by default) and push branch (leave blank to use the active checked-out branch).
+5. **Network Proxy**: Optional proxy URL for Git push commands (e.g., `socks5://127.0.0.1:7897` or `http://127.0.0.1:7890`).
+
+---
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).

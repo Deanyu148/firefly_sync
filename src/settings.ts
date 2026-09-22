@@ -23,7 +23,7 @@ export const DEFAULT_SETTINGS: FireflySyncSettings = {
 	blogImagesPath: "src/content/posts/images",
 	remote: "origin",
 	branch: "",
-	commitMessage: "同步 Obsidian 文章到 FireFly",
+	commitMessage: "Sync Obsidian notes to FireFly",
 	proxyUrl: "",
 	ignoreFolders: [".obsidian"],
 };
@@ -52,12 +52,12 @@ export async function pickDirectory(defaultPath?: string): Promise<string | null
 			const initial = defaultPath ? defaultPath.replaceAll("\\", "\\\\") : "";
 			const scriptLines = [
 				"Add-Type -AssemblyName System.Windows.Forms",
-				" = New-Object System.Windows.Forms.FolderBrowserDialog",
-				".Description = '请选择文件夹'",
-				initial ? `if (Test-Path \x27${initial}\x27) { $dialog.SelectedPath = \x27${initial}\x27 }` : "",
-				"if (.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {",
+				"$dialog = New-Object System.Windows.Forms.FolderBrowserDialog",
+				"$dialog.Description = 'Select Directory'",
+				initial ? `if (Test-Path '${initial}') { $dialog.SelectedPath = '${initial}' }` : "",
+				"if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {",
 				"    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8",
-				"    Write-Output .SelectedPath",
+				"    Write-Output $dialog.SelectedPath",
 				"}",
 			].filter(Boolean).join("; ");
 			const result = await execFileAsync("powershell", ["-NoProfile", "-NonInteractive", "-Command", scriptLines], {
@@ -129,15 +129,15 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 		containerEl.empty();
 		containerEl.createEl("h2", { text: "FireFly Sync" });
 		containerEl.createEl("p", {
-			text: "配置本地 FireFly 博客 Git 仓库及文章、附件存放路径。",
+			text: "Configure local FireFly blog repository, post directory, and media attachment path.",
 			cls: "firefly-sync-setting-note",
 		});
 
-		// 1. 博客仓库根路径
+		// 1. Blog repository path
 		let repoTextInput: HTMLInputElement;
 		new Setting(containerEl)
-			.setName("博客仓库路径")
-			.setDesc("例如 E:\\FireFly。必须是已经初始化的 Git 仓库。")
+			.setName("Blog repository path")
+			.setDesc("Root directory of the initialized FireFly Git repository (e.g. E:\\FireFly).")
 			.addText((text) => {
 				repoTextInput = text.inputEl;
 				text
@@ -150,8 +150,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			})
 			.addButton((button) =>
 				button
-					.setButtonText("浏览...")
-					.setTooltip("选择博客仓库根目录")
+					.setButtonText("Browse...")
+					.setTooltip("Select blog repository root directory")
 					.onClick(async () => {
 						const selected = await pickDirectory(this.plugin.settings.blogRepositoryPath);
 						if (selected) {
@@ -162,11 +162,11 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		// 2. 博客文章存放目录
+		// 2. Blog posts directory
 		let postsTextInput: HTMLInputElement;
 		new Setting(containerEl)
-			.setName("博客文章存放目录")
-			.setDesc("相对于博客仓库的相对路径，默认 src/content/posts。也可以点击浏览选择。")
+			.setName("Blog posts directory")
+			.setDesc("Path relative to blog repository root, default: src/content/posts.")
 			.addText((text) => {
 				postsTextInput = text.inputEl;
 				text
@@ -179,8 +179,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			})
 			.addButton((button) =>
 				button
-					.setButtonText("浏览...")
-					.setTooltip("选择博客文章存放目录")
+					.setButtonText("Browse...")
+					.setTooltip("Select blog posts directory")
 					.onClick(async () => {
 						const repo = this.plugin.settings.blogRepositoryPath;
 						const initial = repo ? resolve(repo, this.plugin.settings.blogPostsPath || "src/content/posts") : undefined;
@@ -194,11 +194,11 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 					}),
 			);
 
-		// 3. 博客附件存放目录
+		// 3. Blog images directory
 		let imagesTextInput: HTMLInputElement;
 		new Setting(containerEl)
-			.setName("博客附件/图片存放目录")
-			.setDesc("相对于博客仓库的相对路径，默认 src/content/posts/images。也可以点击浏览选择。")
+			.setName("Blog images/media directory")
+			.setDesc("Path relative to blog repository root, default: src/content/posts/images.")
 			.addText((text) => {
 				imagesTextInput = text.inputEl;
 				text
@@ -211,8 +211,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			})
 			.addButton((button) =>
 				button
-					.setButtonText("浏览...")
-					.setTooltip("选择博客附件/图片存放目录")
+					.setButtonText("Browse...")
+					.setTooltip("Select blog images/media directory")
 					.onClick(async () => {
 						const repo = this.plugin.settings.blogRepositoryPath;
 						const initial = repo ? resolve(repo, this.plugin.settings.blogImagesPath || "src/content/posts/images") : undefined;
@@ -227,8 +227,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Git 远端")
-			.setDesc("默认 origin。")
+			.setName("Git remote")
+			.setDesc("Remote name (default: origin).")
 			.addText((text) =>
 				text
 					.setValue(this.plugin.settings.remote)
@@ -239,8 +239,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("推送分支")
-			.setDesc("留空时使用当前检出的分支。")
+			.setName("Push branch")
+			.setDesc("Leave empty to use the current checked-out branch.")
 			.addText((text) =>
 				text
 					.setPlaceholder("main")
@@ -252,7 +252,7 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("提交信息")
+			.setName("Commit message")
 			.addText((text) =>
 				text
 					.setValue(this.plugin.settings.commitMessage)
@@ -262,10 +262,9 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 					}),
 			);
 
-
 		new Setting(containerEl)
-			.setName("网络代理")
-			.setDesc("可选。用于博客 Git 推送，支持 http://, https://, socks4://, socks5://（例如 socks5://127.0.0.1:7897 或 http://127.0.0.1:7890）。留空则直连。")
+			.setName("Network proxy")
+			.setDesc("Optional. Used for Git push. Supports http://, https://, socks4://, socks5:// (e.g. socks5://127.0.0.1:7897). Leave blank for direct connection.")
 			.addText((text) =>
 				text
 					.setPlaceholder("socks5://127.0.0.1:7897")
@@ -277,8 +276,8 @@ export class FireflySyncSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName("Vault 忽略目录")
-			.setDesc("整个 Vault 模式不会同步这些目录，逗号分隔。默认忽略 .obsidian。")
+			.setName("Vault ignored folders")
+			.setDesc("Full vault mode will skip these folders, comma-separated. Default: .obsidian.")
 			.addText((text) =>
 				text
 					.setValue(this.plugin.settings.ignoreFolders.join(", "))

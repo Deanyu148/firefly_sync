@@ -80,7 +80,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           mkdir -p build/firefly-sync
-          cp main.js manifest.json styles.css versions.json LICENSE README.md build/firefly-sync/
+          cp main.js manifest.json styles.css versions.json LICENSE README.md README_zh.md build/firefly-sync/
           cd build
           zip -r ../firefly-sync.zip firefly-sync/
           cd ..

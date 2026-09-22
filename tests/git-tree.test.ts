@@ -17,17 +17,17 @@ async function git(cwd: string, ...args: string[]): Promise<string> {
 describe("git status parsing", () => {
 	it("parses modified, added, deleted, and untracked entries", () => {
 		expect(parseGitStatus(" M src/content/posts/a.md\nA  src/content/posts/b.md\n?? c.md\n D old.md")).toEqual([
-			{ path: "src/content/posts/a.md", status: "修改", indexStatus: " ", workTreeStatus: "M" },
-			{ path: "src/content/posts/b.md", status: "新增", indexStatus: "A", workTreeStatus: " " },
-			{ path: "c.md", status: "未跟踪", indexStatus: "?", workTreeStatus: "?" },
-			{ path: "old.md", status: "删除", indexStatus: " ", workTreeStatus: "D" },
+			{ path: "src/content/posts/a.md", status: "Modified", indexStatus: " ", workTreeStatus: "M" },
+			{ path: "src/content/posts/b.md", status: "Added", indexStatus: "A", workTreeStatus: " " },
+			{ path: "c.md", status: "Untracked", indexStatus: "?", workTreeStatus: "?" },
+			{ path: "old.md", status: "Deleted", indexStatus: " ", workTreeStatus: "D" },
 		]);
 	});
 
 	it("parses NUL-delimited filenames and rename pairs without losing spaces", () => {
 		const statuses = parseGitStatus(" M file with space.md\0?? new name.md\0R  old.md\0new name.md\0");
 		expect(statuses.map((status) => status.path)).toEqual(["file with space.md", "new name.md", "new name.md"]);
-		expect(statuses[2]?.status).toBe("重命名");
+		expect(statuses[2]?.status).toBe("Renamed");
 	});
 });
 
@@ -58,7 +58,7 @@ describe("sync preview", () => {
 			sourceAbsolutePath: source,
 			targetRelativePath: "src/content/posts/post.md",
 		});
-		expect(preview.statusLabel).toBe("修改");
+		expect(preview.statusLabel).toBe("Modified");
 		expect(preview.diff).toContain("-old");
 		expect(preview.diff).toContain("+new");
 	});
@@ -68,7 +68,7 @@ describe("sync preview", () => {
 		try {
 			const source = join(root, "source.md");
 			await writeFile(source, "safe\n", "utf8");
-			await expect(copyToBlog(root, [{ sourceAbsolutePath: source, targetRelativePath: "../outside.md" }])).rejects.toThrow("博客仓库之外");
+			await expect(copyToBlog(root, [{ sourceAbsolutePath: source, targetRelativePath: "../outside.md" }])).rejects.toThrow("Access denied outside");
 		} finally {
 			await rm(root, { recursive: true, force: true });
 		}
@@ -136,7 +136,7 @@ describe("sync preview", () => {
 			await writeFile(join(repo, "test.txt"), "hello\n");
 			// Invalid proxy should be accepted by git invocation args and attempted
 			const msg = await commitAndPush(repo, ["test.txt"], "test commit", "origin", "main");
-			expect(msg).toContain("已提交 1 个文件");
+			expect(msg).toContain("Committed 1 files");
 		} finally {
 			await rm(root, { recursive: true, force: true });
 		}
@@ -165,7 +165,7 @@ describe("git commit and push", () => {
 			await writeFile(source, "selected\n", "utf8");
 			await copyToBlog(repo, [{ sourceAbsolutePath: source, targetRelativePath: "src/content/posts/selected.md" }]);
 			const message = await commitAndPush(repo, ["src/content/posts/selected.md"], "sync selected", "origin", "main");
-			expect(message).toContain("已提交 1 个文件");
+			expect(message).toContain("Committed 1 files");
 			expect(await readFile(join(repo, "src", "content", "posts", "selected.md"), "utf8")).toBe("selected\n");
 			expect(await git(remote, "show", "main:src/content/posts/selected.md")).toBe("selected\n");
 			expect(await git(repo, "status", "--short")).toBe("");
